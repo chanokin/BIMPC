@@ -6,7 +6,7 @@ In this directory:
 -  SpiNN/bkout.c is SpiNNaker C code
 -  SpiNN/bkout/main.c is the host visualiser (needs SDL)
 
-To run SpiNNaker version:
+_To run SpiNNaker version:_
 
 ybug 192.168.240.253
 
@@ -16,7 +16,7 @@ iptag 1 set . 17894
 
 app_load  bkout.aplx @0,0 1 16
 
-Possibly useful:
+_Possibly useful:_
 
 iobuf 1
 
