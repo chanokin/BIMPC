@@ -3,6 +3,8 @@ from pacman.executor.injection_decorator import inject_items
 from pacman.model.decorators.overrides import overrides
 from pacman.model.graphs.application.impl.application_vertex import \
     ApplicationVertex
+from pacman.model.resources.cpu_cycles_per_tick_resource import \
+    CPUCyclesPerTickResource
 from pacman.model.resources.dtcm_resource import DTCMResource
 from pacman.model.resources.resource_container import ResourceContainer
 from pacman.model.resources.sdram_resource import SDRAMResource
@@ -41,6 +43,7 @@ class Breakout(
     AbstractHasAssociatedBinary, AbstractProvidesOutgoingPartitionConstraints,
     PopulationSettableChangeRequiresMapping, AbstractBinaryUsesSimulationRun):
 
+    BREAKOUT_REGION_BYTES = 4
     WIDTH_PIXELS = 160
     HEIGHT_PIXELS = 128
 
@@ -51,7 +54,7 @@ class Breakout(
 
         # Superclasses
         ApplicationVertex.__init__(
-            self, label, constraints, self._model_based_max_atoms_per_core)
+            self, label, constraints, self.n_atoms)
         AbstractProvidesOutgoingPartitionConstraints.__init__(self)
         PopulationSettableChangeRequiresMapping.__init__(self)
 
@@ -68,11 +71,10 @@ class Breakout(
     )
     def get_resources_used_by_atoms(self, vertex_slice,
                                     n_machine_time_steps, machine_time_step):
-        # **HACK** only way to force partitioning is to
-        # 4 bytes required for breakout parameters region
+        # **HACK** only way to force no partitioning is to zero dtcm and cpu
         container = ResourceContainer(
             sdram=SDRAMResource(
-                4 +
+                self.BREAKOUT_REGION_BYTES +
                 front_end_common_constants.SYSTEM_BYTES_REQUIREMENT +
                 BreakoutMachineVertex.get_provenance_data_size(0)),
             dtcm=DTCMResource(0),
@@ -97,7 +99,7 @@ class Breakout(
     @property
     @overrides(ApplicationVertex.n_atoms)
     def n_atoms(self):
-        return WIDTH_PIXELS * HEIGHT_PIXELS
+        return self.WIDTH_PIXELS * self.HEIGHT_PIXELS
 
     # ========================================================================
     # AbstractGeneratesDataSpecification overrides
@@ -133,7 +135,7 @@ class Breakout(
                     label='setup')
         spec.reserve_memory_region(
             region=BreakoutMachineVertex._BREAKOUT_REGIONS.BREAKOUT.value,
-                    size=poisson_params_sz, label='BreakoutParams')
+                    size=self.BREAKOUT_REGION_BYTES, label='BreakoutParams')
         vertex.reserve_provenance_data_region(spec)
 
         # Write setup region

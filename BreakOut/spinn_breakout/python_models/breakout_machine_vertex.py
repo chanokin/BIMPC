@@ -27,4 +27,4 @@ class BreakoutMachineVertex(MachineVertex,
         MachineVertex.__init__(self, resources_required, label,
                                constraints=constraints)
         ProvidesProvenanceDataFromMachineImpl.__init__(
-            self, _BREAKOUT_REGIONS.PROVENANCE.value, 0)
+            self, self._BREAKOUT_REGIONS.PROVENANCE.value, 0)
