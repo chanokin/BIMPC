@@ -10,10 +10,10 @@ def receive_spikes(label, t, neuron_ids):
         print "Received spike at time {} from {}{}".format(t, label, n)
 
 # Set up python live spike connection
-rx_conn = SpynnakerLiveSpikesConnection(receive_labels=["receiver"])
+rx_conn = SpynnakerLiveSpikesConnection(receive_labels=["breakout"])
 
 # Register python receiver with live spike connection
-rx_conn.add_receive_callback("receiver", receive_spikes)
+rx_conn.add_receive_callback("breakout", receive_spikes)
 
 # Setup pyNN simulation
 sim.setup(timestep=1.0)
