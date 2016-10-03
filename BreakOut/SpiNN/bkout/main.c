@@ -24,13 +24,13 @@ SDL_Event e;                                    // Event handler
 
 const Uint8* currentKeyStates;
 
-const int GAME_WIDTH  = 160;                    // Game dimension constants
-const int GAME_HEIGHT = 128;
+#define GAME_WIDTH  160                    // Game dimension constants
+#define GAME_HEIGHT 128
 
 #define SCALE 4                                 // screen pixels per game pixel
 
-const int SCREEN_WIDTH  = GAME_WIDTH*SCALE;     // Screen dimension constants
-const int SCREEN_HEIGHT = GAME_HEIGHT*SCALE;
+#define SCREEN_WIDTH  (GAME_WIDTH*SCALE)     // Screen dimension constants
+#define  SCREEN_HEIGHT (GAME_HEIGHT*SCALE)
 
 int events[60];                                // display update events; events[0] = number of events to process
 
