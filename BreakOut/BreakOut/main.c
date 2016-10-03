@@ -10,25 +10,28 @@
 #include "SDL.h"
 #include <stdio.h>
 
+// Constants
+#define GAME_WIDTH  160                    // Game dimension constants
+#define GAME_HEIGHT 128
+
+#define SCALE 4                                 // screen pixels per game pixel
+
+#define SCREEN_WIDTH  (GAME_WIDTH*SCALE)     // Screen dimension constants
+#define SCREEN_HEIGHT (GAME_HEIGHT*SCALE)
+
+#define FRAME_DELAY 20                   // Frame delay (ms)
+#define OUT_OF_PLAY 100                  // Ball outof play time (frames)
+
+#define FACT 16                                 // ball position and velocity scale factor
+
+// SDL objects
 SDL_Window*   gWindow       = NULL;             // The window we'll be rendering to
 SDL_Renderer* gRenderer     = NULL;             // The window renderer
 SDL_Event e;                                    // Event handler
 
+
 const Uint8* currentKeyStates;
 int keystate = 0;
-
-const int GAME_WIDTH  = 160;                    // Game dimension constants
-const int GAME_HEIGHT = 128;
-
-#define SCALE 4                                 // screen pixels per game pixel
-
-const int SCREEN_WIDTH  = GAME_WIDTH*SCALE;     // Screen dimension constants
-const int SCREEN_HEIGHT = GAME_HEIGHT*SCALE;
-
-const int FRAME_DELAY   = 20;                   // Frame delay (ms)
-const int OUT_OF_PLAY   = 100;                  // Ball outof play time (frames)
-
-#define FACT 16                                 // ball position and velocity scale factor
 
 int x = (GAME_WIDTH/4)*FACT;                    // initial ball coordinates in fixed-point
 int y = (GAME_HEIGHT/2)*FACT;
