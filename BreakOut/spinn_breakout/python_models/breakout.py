@@ -35,9 +35,9 @@ from spynnaker.pyNN.utilities import constants
 # Breakout imports
 from breakout_machine_vertex import BreakoutMachineVertex
 
-# ============================================================================
+# ----------------------------------------------------------------------------
 # Breakout
-# ============================================================================
+# ----------------------------------------------------------------------------
 class Breakout(
     ApplicationVertex, AbstractGeneratesDataSpecification,
     AbstractHasAssociatedBinary, AbstractProvidesOutgoingPartitionConstraints,
@@ -58,9 +58,9 @@ class Breakout(
         AbstractProvidesOutgoingPartitionConstraints.__init__(self)
         PopulationSettableChangeRequiresMapping.__init__(self)
 
-    # ========================================================================
+    # ------------------------------------------------------------------------
     # ApplicationVertex overrides
-    # ========================================================================
+    # ------------------------------------------------------------------------
     @inject_items({
         "n_machine_time_steps": "TotalMachineTimeSteps",
         "machine_time_step": "MachineTimeStep"
@@ -101,9 +101,9 @@ class Breakout(
     def n_atoms(self):
         return self.WIDTH_PIXELS * self.HEIGHT_PIXELS
 
-    # ========================================================================
+    # ------------------------------------------------------------------------
     # AbstractGeneratesDataSpecification overrides
-    # ========================================================================
+    # ------------------------------------------------------------------------
     @inject_items({
         "machine_time_step": "MachineTimeStep",
         "time_scale_factor": "TimeScaleFactor",
@@ -156,16 +156,16 @@ class Breakout(
         # End-of-Spec:
         spec.end_specification()
 
-    # ========================================================================
+    # ------------------------------------------------------------------------
     # AbstractHasAssociatedBinary overrides
-    # ========================================================================
+    # ------------------------------------------------------------------------
     @overrides(AbstractHasAssociatedBinary.get_binary_file_name)
     def get_binary_file_name(self):
         return "breakout.aplx"
 
-    # ========================================================================
+    # ------------------------------------------------------------------------
     # AbstractProvidesOutgoingPartitionConstraints overrides
-    # ========================================================================
+    # ------------------------------------------------------------------------
     @overrides(AbstractProvidesOutgoingPartitionConstraints.
                get_outgoing_partition_constraints)
     def get_outgoing_partition_constraints(self, partition):

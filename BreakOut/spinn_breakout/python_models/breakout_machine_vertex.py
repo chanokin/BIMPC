@@ -10,9 +10,9 @@ from spinn_front_end_common.interface.provenance\
     .provides_provenance_data_from_machine_impl \
     import ProvidesProvenanceDataFromMachineImpl
 
-# ============================================================================
+# ----------------------------------------------------------------------------
 # BreakoutMachineVertex
-# ============================================================================
+# ----------------------------------------------------------------------------
 class BreakoutMachineVertex(MachineVertex,
                             ProvidesProvenanceDataFromMachineImpl):
 
