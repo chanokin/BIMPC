@@ -38,6 +38,14 @@ from breakout_machine_vertex import BreakoutMachineVertex
 # ----------------------------------------------------------------------------
 # Breakout
 # ----------------------------------------------------------------------------
+# **HACK** for Projection to connect a synapse type is required
+class BreakoutSynapseType(object):
+    def get_synapse_id_by_target(self, target):
+        return 0
+
+# ----------------------------------------------------------------------------
+# Breakout
+# ----------------------------------------------------------------------------
 class Breakout(
     ApplicationVertex, AbstractGeneratesDataSpecification,
     AbstractHasAssociatedBinary, AbstractProvidesOutgoingPartitionConstraints,
@@ -47,6 +55,9 @@ class Breakout(
     WIDTH_PIXELS = 160
     HEIGHT_PIXELS = 128
     COLOUR_BITS = 2
+
+    # **HACK** for Projection to connect a synapse type is required
+    synapse_type = BreakoutSynapseType()
 
     def __init__(self, n_neurons, constraints=None, label="Breakout"):
         # **NOTE** n_neurons currently ignored - width and height will be
@@ -58,6 +69,10 @@ class Breakout(
             self, label, constraints, self.n_atoms)
         AbstractProvidesOutgoingPartitionConstraints.__init__(self)
         PopulationSettableChangeRequiresMapping.__init__(self)
+
+    def get_maximum_delay_supported_in_ms(self, machine_time_step):
+        # Breakout has no synapses so can simulate only one time step of delay
+        return machine_time_step / 1000.0
 
     # ------------------------------------------------------------------------
     # ApplicationVertex overrides
@@ -85,7 +100,9 @@ class Breakout(
     @property
     @overrides(ApplicationVertex.n_atoms)
     def n_atoms(self):
-        return self.WIDTH_PIXELS * self.HEIGHT_PIXELS * self.COLOUR_BITS
+        # **TODO** should we calculate this automatically
+        # based on log2 of width and height?
+        return 256 * 256 * 2
 
     # ------------------------------------------------------------------------
     # AbstractGeneratesDataSpecification overrides

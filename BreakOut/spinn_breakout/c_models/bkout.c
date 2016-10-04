@@ -57,6 +57,12 @@ typedef enum
   COLOUR_SCORE      = COLOUR_SOFT | 0x6,
 } colour_t;
 
+typedef enum
+{
+  KEY_LEFT  = 0x1,
+  KEY_RIGHT = 0x2,
+} key_t;
+
 //----------------------------------------------------------------------------
 // Globals
 //----------------------------------------------------------------------------
@@ -78,13 +84,13 @@ static int bat_len = 8;
 static int frame_buff[GAME_WIDTH / 8][GAME_HEIGHT];
 
 // control pause when ball out of play
-static int out_of_play      = 0;
+static int out_of_play = 0;
 
 // game score
-static int score            = 0;
+static int score = 0;
 
 // state of left/right keys
-static int keystate         = 2;
+static int keystate = 0;
 
 // digits 0-9 in 3 x 5 format for score
 static const uint16_t digit[10] = {0x7B6F,0x1249,0x73E7,0x73CF,0x4979,0x79CF,0x79EF,0x7249,0x7BEF,0x7BCF};
@@ -116,7 +122,7 @@ static inline void add_event (int i, int j, colour_t col)
 // gets pixel colour from within word
 static inline colour_t get_pixel_col (int i, int j)
 {
-  return (colour_t)(frame_buff[i/8][j] >> ((i%8)*4) & 0xF);
+  return (colour_t)(frame_buff[i / 8][j] >> ((i % 8)*4) & 0xF);
 }
 
 // inserts pixel colour within word
@@ -124,7 +130,7 @@ static inline void set_pixel_col (int i, int j, colour_t col)
 {
     if (col != get_pixel_col(i, j))
     {
-      frame_buff[i/8][j] = (frame_buff[i/8][j] & ~(0xF << ((i%8)*4))) | ((int)col << ((i%8)*4));
+      frame_buff[i / 8][j] = (frame_buff[i / 8][j] & ~(0xF << ((i % 8) * 4))) | ((int)col << ((i % 8)*4));
       add_event (i, j, col);
     }
 }
@@ -151,14 +157,17 @@ static void update_frame ()
   const int old_xbat = x_bat;
 
   // Update bat and clamp
-  if (keystate & 1 && --x_bat < 0)
+  if (keystate & KEY_LEFT && --x_bat < 0)
   {
     x_bat = 0;
   }
-  else if (keystate & 2 && ++x_bat > GAME_WIDTH-bat_len)
+  else if (keystate & KEY_RIGHT && ++x_bat > GAME_WIDTH-bat_len)
   {
     x_bat = GAME_WIDTH-bat_len;
   }
+
+  // Clear keystate
+  keystate = 0;
 
   // If bat's moved
   if (old_xbat != x_bat)
@@ -327,35 +336,51 @@ static bool initialize(uint32_t *timer_period)
 
 void timer_callback(uint ticks, uint dummy)
 {
-    // If a fixed number of simulation ticks are specified and these have passed
-    // **NOTE** ticks starts at 1!
-    if (infinite_run && (ticks - 1) >= simulation_ticks)
+  // If a fixed number of simulation ticks are specified and these have passed
+  // **NOTE** ticks starts at 1!
+  if (!infinite_run && (ticks - 1) >= simulation_ticks)
+  {
+    return;
+  }
+  // Otherwise
+  else
+  {
+    // Increment ticks in frame counter and if this has reached frame delay
+    tick_in_frame++;
+    if(tick_in_frame == FRAME_DELAY)
     {
-      return;
-    }
-    // Otherwise
-    else
-    {
-      // Increment ticks in frame counter and if this has reached frame delay
-      tick_in_frame++;
-      if(tick_in_frame == FRAME_DELAY)
+      // If this is the first update, draw bat as
+      // collision detection relies on this
+      if(ticks == FRAME_DELAY)
       {
-        // If this is the first update, draw bat as
-        // collision detection relies on this
-        if(ticks == FRAME_DELAY)
+        // Draw bat
+        for (int i = x_bat; i < (x_bat + bat_len); i++)
         {
-          // Draw bat
-          for (int i=x_bat; i<(x_bat+bat_len); i++)
-          {
-            set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);
-          }
+          set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);
         }
-
-        // Reset ticks in frame and update frame
-        tick_in_frame = 0;
-        update_frame();
       }
+
+      // Reset ticks in frame and update frame
+      tick_in_frame = 0;
+      update_frame();
     }
+  }
+}
+
+void mc_packet_received_callback(uint key, uint payload)
+{
+  log_debug("Packet received %08x", key);
+
+  // Left
+  if(key & 0x1)
+  {
+    keystate |= KEY_LEFT;
+  }
+  // Right
+  else
+  {
+    keystate |= KEY_RIGHT;
+  }
 }
 
 //----------------------------------------------------------------------------
@@ -381,6 +406,7 @@ void c_main(void)
 
   // Register callback
   spin1_callback_on(TIMER_TICK, timer_callback, 2);
+  spin1_callback_on(MC_PACKET_RECEIVED, mc_packet_received_callback, -1);
 
   simulation_run();
 }
