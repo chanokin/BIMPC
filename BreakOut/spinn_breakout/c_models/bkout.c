@@ -329,7 +329,7 @@ void timer_callback(uint ticks, uint dummy)
 {
     // If a fixed number of simulation ticks are specified and these have passed
     // **NOTE** ticks starts at 1!
-    if (infinite_run != TRUE && (ticks - 1) >= simulation_ticks)
+    if (infinite_run && (ticks - 1) >= simulation_ticks)
     {
       return;
     }
@@ -369,6 +369,7 @@ void c_main(void)
   {
     log_error("Error in initialisation - exiting!");
     rt_error(RTE_SWERR);
+    return;
   }
 
   init_frame();
