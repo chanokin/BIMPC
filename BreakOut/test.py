@@ -52,25 +52,22 @@ def updatefig(frame):
             break
         else:
             # Slice off EIEIO header and convert to numpy array of uint32
-            payload = np.fromstring(raw_data[2:], dtype="uint32")
+            payload = np.fromstring(raw_data[6:], dtype="uint32")
 
             # Extract coordinates
             x = (payload >> X_SHIFT) & X_MASK
             y = (payload >> Y_SHIFT) & Y_MASK
             c = (payload & COLOUR_MASK)
 
-            # **YUCK** mask valid pixels
-            valid = (x < 160) & (y < 128) & (c < 2)
-
             # Set valid pixels
-            image_data[y[valid],x[valid]] = c[valid]
+            image_data[y,x] = c
 
     # Set image data
     image.set_array(image_data)
     return [image]
 
 # Play animation
-ani = animation.FuncAnimation(fig, updatefig, interval=20.0,
+ani = animation.FuncAnimation(fig, updatefig, interval=40.0,
                               blit=True)
 
 # Setup pyNN simulation
