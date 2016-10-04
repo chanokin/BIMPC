@@ -22,10 +22,12 @@
 //----------------------------------------------------------------------------
 // Macros
 //----------------------------------------------------------------------------
+// **TODO** many of these magic numbers should be passed from Python
 #define GAME_WIDTH  160                         // Game dimension constants
 #define GAME_HEIGHT 128
 
 #define OUT_OF_PLAY 100                         // Ball outof play time (frames)
+#define FRAME_DELAY 20                          // Frame delay (ms)
 
 #define FACT 16                                 // ball position and velocity scale factor
 
@@ -73,6 +75,9 @@ static uint32_t infinite_run;
 
 //! the number of timer ticks that this model should run for before exiting.
 static uint32_t simulation_ticks = 0;
+
+//! How many ticks until next frame
+static uint32_t tick_in_frame = 0;
 
 //----------------------------------------------------------------------------
 // Static functions
@@ -196,9 +201,9 @@ static void update_frame () {
 //----------------------------------------------------------------------------
 /*void process_sdp (uint m, uint port)   {                                                                // incoming SDP message
     sdp_msg_t *msg = (sdp_msg_t *) m;
-    
+
     io_printf (IO_BUF, "SDP len %d, port %d - %s\n", msg->length, port, msg->data);
-    
+
     if (port == 1) spin1_memcpy(&keystate, msg->data, 4);                                               // Port 1 - key data
     spin1_msg_free (msg);
     if (port == 7) spin1_exit (0);
@@ -212,9 +217,17 @@ void timer_callback(uint ticks, uint dummy)
     {
         return;
     }
+    // Otherwise
     else
     {
-      update_frame();                                                                                     // next game timestep
+      // Increment ticks in frame counter and if this has reached frame delay
+      tick_in_frame++;
+      if(tick_in_frame == FRAME_DELAY)
+      {
+        // Reset ticks in frame and update frame
+        tick_in_frame = 0;
+        update_frame();
+      }
     }
 }
 
@@ -233,6 +246,7 @@ void c_main(void)
 
     init_frame();
     keystate = 2;
+    tick_in_frame = 0;
 
     // Set timer tick (in microseconds)
     spin1_set_timer_tick(timer_period);
