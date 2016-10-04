@@ -61,16 +61,8 @@ class Breakout(
     # ------------------------------------------------------------------------
     # ApplicationVertex overrides
     # ------------------------------------------------------------------------
-    @inject_items({
-        "n_machine_time_steps": "TotalMachineTimeSteps",
-        "machine_time_step": "MachineTimeStep"
-    })
-    @overrides(
-        ApplicationVertex.get_resources_used_by_atoms,
-        additional_arguments={"n_machine_time_steps", "machine_time_step"}
-    )
-    def get_resources_used_by_atoms(self, vertex_slice,
-                                    n_machine_time_steps, machine_time_step):
+    @overrides(ApplicationVertex.get_resources_used_by_atoms)
+    def get_resources_used_by_atoms(self, vertex_slice):
         # **HACK** only way to force no partitioning is to zero dtcm and cpu
         container = ResourceContainer(
             sdram=SDRAMResource(
@@ -82,16 +74,9 @@ class Breakout(
 
         return container
 
-    @inject_items({
-        "n_machine_time_steps": "TotalMachineTimeSteps",
-        "machine_time_step": "MachineTimeStep"
-    })
-    @overrides(
-        ApplicationVertex.create_machine_vertex,
-        additional_arguments={"n_machine_time_steps", "machine_time_step"}
-    )
+
+    @overrides(ApplicationVertex.create_machine_vertex)
     def create_machine_vertex(self, vertex_slice, resources_required,
-                              n_machine_time_steps, machine_time_step,
                               label=None, constraints=None):
         # Return suitable machine vertex
         return BreakoutMachineVertex(resources_required, constraints, label)
@@ -104,20 +89,16 @@ class Breakout(
     # ------------------------------------------------------------------------
     # AbstractGeneratesDataSpecification overrides
     # ------------------------------------------------------------------------
-    @inject_items({
-        "machine_time_step": "MachineTimeStep",
-        "time_scale_factor": "TimeScaleFactor",
-        "graph_mapper": "MemoryGraphMapper",
-        "routing_info": "MemoryRoutingInfos",
-        "tags": "MemoryTags",
-        "n_machine_time_steps": "TotalMachineTimeSteps"
-    })
-    @overrides(
-        AbstractGeneratesDataSpecification.generate_data_specification,
-        additional_arguments={
-            "machine_time_step", "time_scale_factor", "graph_mapper",
-            "routing_info", "tags", "n_machine_time_steps"
-        }
+    @inject_items({"machine_time_step": "MachineTimeStep",
+                   "time_scale_factor": "TimeScaleFactor",
+                   "graph_mapper": "MemoryGraphMapper",
+                   "routing_info": "MemoryRoutingInfos",
+                   "tags": "MemoryTags",
+                   "n_machine_time_steps": "TotalMachineTimeSteps"})
+    @overrides(AbstractGeneratesDataSpecification.generate_data_specification,
+               additional_arguments={"machine_time_step", "time_scale_factor",
+                                     "graph_mapper", "routing_info", "tags",
+                                     "n_machine_time_steps"}
     )
     def generate_data_specification(self, spec, placement, machine_time_step,
                                     time_scale_factor, graph_mapper,
