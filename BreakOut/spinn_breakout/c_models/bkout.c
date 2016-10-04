@@ -41,6 +41,14 @@ typedef enum
   REGION_PROVENANCE,
 } region_t;
 
+typedef enum
+{
+  COLOUR_BACKGROUND = 0x1,
+  COLOUR_BAT        = 0xE,
+  COLOUR_BALL       = 0xF,
+  COLOUR_SCORE      = 0x6,
+} colour_t;
+
 //----------------------------------------------------------------------------
 // Globals
 //----------------------------------------------------------------------------
@@ -54,11 +62,6 @@ static int x_bat   = 0;                                // bat LHS x position
 static int bat_len = 8;                                // bat length in pixels
 
 static int frame_buff[GAME_WIDTH/8][GAME_HEIGHT];      // frame buffer: 160 x 128 x 4 bits: [hard/soft, R, G, B]
-
-static const int background = 0x1;                     // background colour - blue & soft
-static const int bat_col    = 0xE;                     // bat colour - yellow & hard
-static const int ball_col   = 0xF;                     // ball colour - white & hard
-static const int score_col  = 0x6;                     // score colour - yellow & soft
 
 static int out_of_play      = 0;                       // control pause when ball out of play
 static int score            = 0;                       // game score
@@ -85,24 +88,25 @@ static uint32_t tick_in_frame = 0;
 static void init_frame () {                                                                                    // initialise frame buffer to blue
     for (int i=0; i<(GAME_WIDTH/8); i++) {
         for (int j=0; j<GAME_HEIGHT; j++) {
-            frame_buff[i][j] = 0x11111111 * background;
+            frame_buff[i][j] = 0x11111111 * COLOUR_BACKGROUND;
         }
     }
 }
 
-static void add_event (int i, int j, int col) {
-    // **TODO** on/offs
-    const uint32_t spike_key = key | (i<<8) | j;
+static void add_event (int i, int j, colour_t col) {
+    const uint32_t colour_bit = (col == COLOUR_BACKGROUND) ? 0 : 1;
+    const uint32_t spike_key = key | (i << 9) | (j << 1) | colour_bit;
+
     spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
 }
 
-static inline int get_pixel_col (int i, int j) {                                                                      // gets pixel colour from within word
-    return (frame_buff[i/8][j] >> ((i%8)*4) & 0xF);
+static inline colour_t get_pixel_col (int i, int j) {                                                                      // gets pixel colour from within word
+    return (colour_t)(frame_buff[i/8][j] >> ((i%8)*4) & 0xF);
 }
 
-static inline void set_pixel_col (int i, int j, int col) {                                                            // inserts pixel colour within word
+static inline void set_pixel_col (int i, int j, colour_t col) {                                                            // inserts pixel colour within word
     if (col != get_pixel_col(i, j)) {
-        frame_buff[i/8][j] = (frame_buff[i/8][j] & ~(0xF << ((i%8)*4))) | (col << ((i%8)*4));
+        frame_buff[i/8][j] = (frame_buff[i/8][j] & ~(0xF << ((i%8)*4))) | ((int)col << ((i%8)*4));
         add_event (i, j, col);
     }
 }
@@ -146,9 +150,9 @@ static void update_frame () {
     if (keystate & 1) if (--x_bat < 0) x_bat = 0;                                                       // move bat
     if (keystate & 2) if (++x_bat > GAME_WIDTH-bat_len) x_bat = GAME_WIDTH-bat_len;
     if (old_xbat != x_bat) {
-        for (int i=x_bat; i<(x_bat+bat_len); i++) set_pixel_col(i, GAME_HEIGHT-1, bat_col);             // draw yellow bat
-        if (x_bat > old_xbat)                     set_pixel_col(old_xbat, GAME_HEIGHT-1, background);
-        else if (x_bat < old_xbat)                set_pixel_col(old_xbat+bat_len, GAME_HEIGHT-1, background);
+        for (int i=x_bat; i<(x_bat+bat_len); i++) set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);             // draw yellow bat
+        if (x_bat > old_xbat)                     set_pixel_col(old_xbat, GAME_HEIGHT-1, COLOUR_BACKGROUND);
+        else if (x_bat < old_xbat)                set_pixel_col(old_xbat+bat_len, GAME_HEIGHT-1, COLOUR_BACKGROUND);
     }
     
 // draw 3-digit score
@@ -157,8 +161,8 @@ static void update_frame () {
         int s_x = GAME_WIDTH/2 + 3 - 4*k;
         for (int i=0; i<3; i++) {
             for (int j=0; j<5; j++) {
-                if (digit[s%10] & (1<<(14-(i+3*j)))) set_pixel_col(s_x + i, 5 + j, score_col);
-                else                                 set_pixel_col(s_x + i, 5 + j, background);
+                if (digit[s%10] & (1<<(14-(i+3*j)))) set_pixel_col(s_x + i, 5 + j, COLOUR_SCORE);
+                else                                 set_pixel_col(s_x + i, 5 + j, COLOUR_BACKGROUND);
             }
         }
         s = s/10;
@@ -166,7 +170,7 @@ static void update_frame () {
     
 // draw ball
     if (out_of_play == 0) {
-        set_pixel_col(x/FACT, y/FACT, background);                                                      // clear pixel to background
+        set_pixel_col(x/FACT, y/FACT, COLOUR_BACKGROUND);                                                      // clear pixel to background
         x += u;                                                                                         // move ball
         if ((x < -u) || (x >= ((GAME_WIDTH*FACT)-u)))  u = -u;                                          // bounce off sides
         y += v;
@@ -190,7 +194,7 @@ static void update_frame () {
             out_of_play = OUT_OF_PLAY;
             if (score > 0) --score;
         } else {
-            set_pixel_col(x/FACT, y/FACT, ball_col);                                                    // draw ball
+            set_pixel_col(x/FACT, y/FACT, COLOUR_BALL);                                                    // draw ball
         }
     } else --out_of_play;
 }

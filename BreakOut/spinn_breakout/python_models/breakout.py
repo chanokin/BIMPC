@@ -46,6 +46,7 @@ class Breakout(
     BREAKOUT_REGION_BYTES = 4
     WIDTH_PIXELS = 160
     HEIGHT_PIXELS = 128
+    COLOUR_BITS = 2
 
     def __init__(self, n_neurons, constraints=None, label="Breakout"):
         # **NOTE** n_neurons currently ignored - width and height will be
@@ -84,7 +85,7 @@ class Breakout(
     @property
     @overrides(ApplicationVertex.n_atoms)
     def n_atoms(self):
-        return self.WIDTH_PIXELS * self.HEIGHT_PIXELS
+        return self.WIDTH_PIXELS * self.HEIGHT_PIXELS * self.COLOUR_BITS
 
     # ------------------------------------------------------------------------
     # AbstractGeneratesDataSpecification overrides
