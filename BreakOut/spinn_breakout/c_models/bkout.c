@@ -147,136 +147,136 @@ static void init_frame ()
 static void update_frame ()
 {
 // draw bat
-    // Cache old bat position
-    const int old_xbat = x_bat;
+  // Cache old bat position
+  const int old_xbat = x_bat;
 
-    // Update bat and clamp
-    if (keystate & 1 && --x_bat < 0)
+  // Update bat and clamp
+  if (keystate & 1 && --x_bat < 0)
+  {
+    x_bat = 0;
+  }
+  else if (keystate & 2 && ++x_bat > GAME_WIDTH-bat_len)
+  {
+    x_bat = GAME_WIDTH-bat_len;
+  }
+
+  // If bat's moved
+  if (old_xbat != x_bat)
+  {
+    // Draw bat pixels
+    for (int i = x_bat; i < (x_bat + bat_len); i++)
     {
-      x_bat = 0;
-    }
-    else if (keystate & 2 && ++x_bat > GAME_WIDTH-bat_len)
-    {
-      x_bat = GAME_WIDTH-bat_len;
+      set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);
     }
 
-    // If bat's moved
-    if (old_xbat != x_bat)
+    // Remove pixels left over from old bat
+    if (x_bat > old_xbat)
     {
-      // Draw bat pixels
-      for (int i = x_bat; i < (x_bat + bat_len); i++)
-      {
-        set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);
-      }
-
-      // Remove pixels left over from old bat
-      if (x_bat > old_xbat)
-      {
-        set_pixel_col(old_xbat, GAME_HEIGHT-1, COLOUR_BACKGROUND);
-      }
-      else if (x_bat < old_xbat)
-      {
-        set_pixel_col(old_xbat + bat_len, GAME_HEIGHT-1, COLOUR_BACKGROUND);
-      }
+      set_pixel_col(old_xbat, GAME_HEIGHT-1, COLOUR_BACKGROUND);
     }
+    else if (x_bat < old_xbat)
+    {
+      set_pixel_col(old_xbat + bat_len, GAME_HEIGHT-1, COLOUR_BACKGROUND);
+    }
+  }
 
 // draw 3-digit score
-    int s = score;
-    // Loop through characters
-    for (int k = 0; k < 3; k++)
+  int s = score;
+  // Loop through characters
+  for (int k = 0; k < 3; k++)
+  {
+    const int s_x = (GAME_WIDTH / 2) + 3 - (4 * k);
+
+    // Loop through x character pixels
+    for (int i=0; i<3; i++)
     {
-      const int s_x = (GAME_WIDTH / 2) + 3 - (4 * k);
-
-      // Loop through x character pixels
-      for (int i=0; i<3; i++)
+      // Loop through y character pixels
+      for (int j=0; j<5; j++)
       {
-        // Loop through y character pixels
-        for (int j=0; j<5; j++)
+        // Set or clear pixel based on 'font' bitmap
+        if (digit[s%10] & (1<<(14-(i+3*j))))
         {
-          // Set or clear pixel based on 'font' bitmap
-          if (digit[s%10] & (1<<(14-(i+3*j))))
-          {
-            set_pixel_col(s_x + i, 5 + j, COLOUR_SCORE);
-          }
-          else
-          {
-            set_pixel_col(s_x + i, 5 + j, COLOUR_BACKGROUND);
-          }
-        }
-      }
-      s = s/10;
-    }
-
-// draw ball
-    if (out_of_play == 0)
-    {
-      // clear pixel to background
-      set_pixel_col(x/FACT, y/FACT, COLOUR_BACKGROUND);
-
-      // move ball in x and bounce off sides
-      x += u;
-      if ((x < -u) || (x >= ((GAME_WIDTH*FACT)-u)))
-      {
-        u = -u;
-      }
-
-      // move ball in y and bounce off top
-      y += v;
-      if (y < -v)
-      {
-        v = -v;
-      }
-
-//detect collision
-      // if we hit something hard!
-      if (get_pixel_col(x / FACT, y / FACT) & COLOUR_HARD)
-      {
-        if (x/FACT < (x_bat+bat_len/4))
-        {
-          u = -FACT;
-        }
-        else if (x/FACT < (x_bat+bat_len/2))
-        {
-          u = -FACT/2;
-        }
-        else if (x/FACT < (x_bat+3*bat_len/4))
-        {
-          u = FACT/2;
+          set_pixel_col(s_x + i, 5 + j, COLOUR_SCORE);
         }
         else
         {
-          u = FACT;
-        }
-
-        v = -FACT;
-        y -= FACT;
-        if (score < 999)
-        {
-          ++score;
+          set_pixel_col(s_x + i, 5 + j, COLOUR_BACKGROUND);
         }
       }
+    }
+    s = s/10;
+  }
 
-// lost ball
-      if (y >= (GAME_HEIGHT*FACT-v))
+// draw ball
+  if (out_of_play == 0)
+  {
+    // clear pixel to background
+    set_pixel_col(x/FACT, y/FACT, COLOUR_BACKGROUND);
+
+    // move ball in x and bounce off sides
+    x += u;
+    if ((x < -u) || (x >= ((GAME_WIDTH*FACT)-u)))
+    {
+      u = -u;
+    }
+
+    // move ball in y and bounce off top
+    y += v;
+    if (y < -v)
+    {
+      v = -v;
+    }
+
+//detect collision
+    // if we hit something hard!
+    if (get_pixel_col(x / FACT, y / FACT) & COLOUR_HARD)
+    {
+      if (x/FACT < (x_bat+bat_len/4))
       {
-        v = -1 * FACT;
-        y = (GAME_HEIGHT / 2)*FACT;
-        out_of_play = OUT_OF_PLAY;
-        if (score > 0)
-        {
-          --score;
-        }
+        u = -FACT;
       }
-      // draw ball
+      else if (x/FACT < (x_bat+bat_len/2))
+      {
+        u = -FACT/2;
+      }
+      else if (x/FACT < (x_bat+3*bat_len/4))
+      {
+        u = FACT/2;
+      }
       else
       {
-        set_pixel_col(x/FACT, y/FACT, COLOUR_BALL);
+        u = FACT;
+      }
+
+      v = -FACT;
+      y -= FACT;
+      if (score < 999)
+      {
+        ++score;
       }
     }
+
+// lost ball
+    if (y >= (GAME_HEIGHT*FACT-v))
+    {
+      v = -1 * FACT;
+      y = (GAME_HEIGHT / 2)*FACT;
+      out_of_play = OUT_OF_PLAY;
+      if (score > 0)
+      {
+        --score;
+      }
+    }
+    // draw ball
     else
     {
-      --out_of_play;
+      set_pixel_col(x/FACT, y/FACT, COLOUR_BALL);
     }
+  }
+  else
+  {
+    --out_of_play;
+  }
 }
 
 static bool initialize(uint32_t *timer_period)
