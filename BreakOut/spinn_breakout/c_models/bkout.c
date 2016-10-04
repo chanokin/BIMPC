@@ -83,32 +83,102 @@ static uint32_t simulation_ticks = 0;
 static uint32_t tick_in_frame = 0;
 
 //----------------------------------------------------------------------------
+// Inline functions
+//----------------------------------------------------------------------------
+static inline void add_event (int i, int j, colour_t col)
+{
+    const uint32_t colour_bit = (col == COLOUR_BACKGROUND) ? 0 : 1;
+    const uint32_t spike_key = key | (i << 9) | (j << 1) | colour_bit;
+
+    spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
+    log_debug("%d, %d, %u, %08x\n", i, j, col, spike_key);
+}
+
+// gets pixel colour from within word
+static inline colour_t get_pixel_col (int i, int j)
+{
+    return (colour_t)(frame_buff[i/8][j] >> ((i%8)*4) & 0xF);
+}
+
+// inserts pixel colour within word
+static inline void set_pixel_col (int i, int j, colour_t col)
+{
+    if (col != get_pixel_col(i, j))
+    {
+        frame_buff[i/8][j] = (frame_buff[i/8][j] & ~(0xF << ((i%8)*4))) | ((int)col << ((i%8)*4));
+        add_event (i, j, col);
+    }
+}
+
+//----------------------------------------------------------------------------
 // Static functions
 //----------------------------------------------------------------------------
-static void init_frame () {                                                                                    // initialise frame buffer to blue
-    for (int i=0; i<(GAME_WIDTH/8); i++) {
-        for (int j=0; j<GAME_HEIGHT; j++) {
+// initialise frame buffer to blue
+static void init_frame ()
+{
+    for (int i=0; i<(GAME_WIDTH/8); i++)
+    {
+        for (int j=0; j<GAME_HEIGHT; j++)
+        {
             frame_buff[i][j] = 0x11111111 * COLOUR_BACKGROUND;
         }
     }
 }
 
-static void add_event (int i, int j, colour_t col) {
-    const uint32_t colour_bit = (col == COLOUR_BACKGROUND) ? 0 : 1;
-    const uint32_t spike_key = key | (i << 9) | (j << 1) | colour_bit;
-
-    spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
-}
-
-static inline colour_t get_pixel_col (int i, int j) {                                                                      // gets pixel colour from within word
-    return (colour_t)(frame_buff[i/8][j] >> ((i%8)*4) & 0xF);
-}
-
-static inline void set_pixel_col (int i, int j, colour_t col) {                                                            // inserts pixel colour within word
-    if (col != get_pixel_col(i, j)) {
-        frame_buff[i/8][j] = (frame_buff[i/8][j] & ~(0xF << ((i%8)*4))) | ((int)col << ((i%8)*4));
-        add_event (i, j, col);
+static void update_frame ()
+{
+// draw bat
+    int old_xbat = x_bat;
+    if (keystate & 1) if (--x_bat < 0) x_bat = 0;                                                       // move bat
+    if (keystate & 2) if (++x_bat > GAME_WIDTH-bat_len) x_bat = GAME_WIDTH-bat_len;
+    if (old_xbat != x_bat) {
+        for (int i=x_bat; i<(x_bat+bat_len); i++) set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);             // draw yellow bat
+        if (x_bat > old_xbat)                     set_pixel_col(old_xbat, GAME_HEIGHT-1, COLOUR_BACKGROUND);
+        else if (x_bat < old_xbat)                set_pixel_col(old_xbat+bat_len, GAME_HEIGHT-1, COLOUR_BACKGROUND);
     }
+
+// draw 3-digit score
+    int s = score;
+    for (int k=0; k<3; k++) {
+        int s_x = GAME_WIDTH/2 + 3 - 4*k;
+        for (int i=0; i<3; i++) {
+            for (int j=0; j<5; j++) {
+                if (digit[s%10] & (1<<(14-(i+3*j)))) set_pixel_col(s_x + i, 5 + j, COLOUR_SCORE);
+                else                                 set_pixel_col(s_x + i, 5 + j, COLOUR_BACKGROUND);
+            }
+        }
+        s = s/10;
+    }
+
+// draw ball
+    if (out_of_play == 0) {
+        set_pixel_col(x/FACT, y/FACT, COLOUR_BACKGROUND);                                                      // clear pixel to background
+        x += u;                                                                                         // move ball
+        if ((x < -u) || (x >= ((GAME_WIDTH*FACT)-u)))  u = -u;                                          // bounce off sides
+        y += v;
+        if (y < -v) v = -v;                                                                             // bounce off top
+
+//detect collision
+        if (get_pixel_col(x/FACT, y/FACT) & 0x8) {                                                      // hit something hard!
+            if (x/FACT < (x_bat+bat_len/4))        u = -FACT;
+            else if (x/FACT < (x_bat+bat_len/2))   u = -FACT/2;
+            else if (x/FACT < (x_bat+3*bat_len/4)) u = FACT/2;
+            else                                   u = FACT;
+            v = -FACT;
+            y -= FACT;
+            if (score < 999) ++score;
+        }
+
+// lost ball
+        if (y >= (GAME_HEIGHT*FACT-v)) {
+            v = -1*FACT;
+            y = (GAME_HEIGHT/2)*FACT;
+            out_of_play = OUT_OF_PLAY;
+            if (score > 0) --score;
+        } else {
+            set_pixel_col(x/FACT, y/FACT, COLOUR_BALL);                                                    // draw ball
+        }
+    } else --out_of_play;
 }
 
 static bool initialize(uint32_t *timer_period)
@@ -143,63 +213,6 @@ static bool initialize(uint32_t *timer_period)
     return true;
 }
 
-static void update_frame () {
-
-// draw bat
-    int old_xbat = x_bat;
-    if (keystate & 1) if (--x_bat < 0) x_bat = 0;                                                       // move bat
-    if (keystate & 2) if (++x_bat > GAME_WIDTH-bat_len) x_bat = GAME_WIDTH-bat_len;
-    if (old_xbat != x_bat) {
-        for (int i=x_bat; i<(x_bat+bat_len); i++) set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);             // draw yellow bat
-        if (x_bat > old_xbat)                     set_pixel_col(old_xbat, GAME_HEIGHT-1, COLOUR_BACKGROUND);
-        else if (x_bat < old_xbat)                set_pixel_col(old_xbat+bat_len, GAME_HEIGHT-1, COLOUR_BACKGROUND);
-    }
-    
-// draw 3-digit score
-    int s = score;
-    for (int k=0; k<3; k++) {
-        int s_x = GAME_WIDTH/2 + 3 - 4*k;
-        for (int i=0; i<3; i++) {
-            for (int j=0; j<5; j++) {
-                if (digit[s%10] & (1<<(14-(i+3*j)))) set_pixel_col(s_x + i, 5 + j, COLOUR_SCORE);
-                else                                 set_pixel_col(s_x + i, 5 + j, COLOUR_BACKGROUND);
-            }
-        }
-        s = s/10;
-    }
-    
-// draw ball
-    if (out_of_play == 0) {
-        set_pixel_col(x/FACT, y/FACT, COLOUR_BACKGROUND);                                                      // clear pixel to background
-        x += u;                                                                                         // move ball
-        if ((x < -u) || (x >= ((GAME_WIDTH*FACT)-u)))  u = -u;                                          // bounce off sides
-        y += v;
-        if (y < -v) v = -v;                                                                             // bounce off top
-    
-//detect collision
-        if (get_pixel_col(x/FACT, y/FACT) & 0x8) {                                                      // hit something hard!
-            if (x/FACT < (x_bat+bat_len/4))        u = -FACT;
-            else if (x/FACT < (x_bat+bat_len/2))   u = -FACT/2;
-            else if (x/FACT < (x_bat+3*bat_len/4)) u = FACT/2;
-            else                                   u = FACT;
-            v = -FACT;
-            y -= FACT;
-            if (score < 999) ++score;
-        }
-    
-// lost ball
-        if (y >= (GAME_HEIGHT*FACT-v)) {
-            v = -1*FACT;
-            y = (GAME_HEIGHT/2)*FACT;
-            out_of_play = OUT_OF_PLAY;
-            if (score > 0) --score;
-        } else {
-            set_pixel_col(x/FACT, y/FACT, COLOUR_BALL);                                                    // draw ball
-        }
-    } else --out_of_play;
-}
-
-
 //----------------------------------------------------------------------------
 // Callbacks
 //----------------------------------------------------------------------------
@@ -228,6 +241,16 @@ void timer_callback(uint ticks, uint dummy)
       tick_in_frame++;
       if(tick_in_frame == FRAME_DELAY)
       {
+        // If this is the first update, draw bat as
+        // collision detection relies on this
+        if(ticks == FRAME_DELAY)
+        {
+            for (int i=x_bat; i<(x_bat+bat_len); i++)
+            {
+                set_pixel_col(i, GAME_HEIGHT-1, COLOUR_BAT);
+            }
+        }
+
         // Reset ticks in frame and update frame
         tick_in_frame = 0;
         update_frame();
@@ -249,7 +272,7 @@ void c_main(void)
     }
 
     init_frame();
-    keystate = 2;
+    keystate = 0;
     tick_in_frame = 0;
 
     // Set timer tick (in microseconds)

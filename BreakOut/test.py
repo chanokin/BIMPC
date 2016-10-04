@@ -67,7 +67,7 @@ def updatefig(frame):
     return [image]
 
 # Play animation
-ani = animation.FuncAnimation(fig, updatefig, interval=40.0,
+ani = animation.FuncAnimation(fig, updatefig, interval=20.0,
                               blit=True)
 
 # Setup pyNN simulation
