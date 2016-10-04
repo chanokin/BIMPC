@@ -1,3 +1,4 @@
+import matplotlib.colors as col
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import numpy as np
@@ -30,11 +31,14 @@ spike_socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 spike_socket.bind(("0.0.0.0", 17893))
 spike_socket.setblocking(False)
 
+# Make awesome CRT palette
+cmap = col.ListedColormap(["black", "green"])
+
 # Create image plot of retina output
 fig = plt.figure()
 image_data = np.zeros((128, 160))
 image = plt.imshow(image_data,
-                   interpolation="nearest", cmap="jet",
+                   interpolation="nearest", cmap=cmap,
                    vmin=0.0, vmax=1.0)
 
 def updatefig(frame):
