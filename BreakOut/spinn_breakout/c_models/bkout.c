@@ -63,6 +63,13 @@ typedef enum
   KEY_RIGHT = 0x2,
 } key_t;
 
+typedef enum
+{
+  SPECIAL_EVENT_SCORE_UP,
+  SPECIAL_EVENT_SCORE_DOWN,
+  SPECIAL_EVENT_MAX,
+} special_event_t;
+
 //----------------------------------------------------------------------------
 // Globals
 //----------------------------------------------------------------------------
@@ -86,14 +93,8 @@ static int frame_buff[GAME_WIDTH / 8][GAME_HEIGHT];
 // control pause when ball out of play
 static int out_of_play = 0;
 
-// game score
-static int score = 0;
-
 // state of left/right keys
 static int keystate = 0;
-
-// digits 0-9 in 3 x 5 format for score
-static const uint16_t digit[10] = {0x7B6F,0x1249,0x73E7,0x73CF,0x4979,0x79CF,0x79EF,0x7249,0x7BEF,0x7BCF};
 
 //! The upper bits of the key value that model should transmit with
 static uint32_t key;
@@ -110,13 +111,25 @@ static uint32_t tick_in_frame = 0;
 //----------------------------------------------------------------------------
 // Inline functions
 //----------------------------------------------------------------------------
-static inline void add_event (int i, int j, colour_t col)
+static inline void add_score_up_event()
+{
+  spin1_send_mc_packet(SPECIAL_EVENT_SCORE_UP, 0, NO_PAYLOAD);
+  log_debug("Score up");
+}
+
+static inline void add_score_down_event()
+{
+  spin1_send_mc_packet(SPECIAL_EVENT_SCORE_DOWN, 0, NO_PAYLOAD);
+  log_debug("Score down");
+}
+
+static inline void add_event(int i, int j, colour_t col)
 {
   const uint32_t colour_bit = (col == COLOUR_BACKGROUND) ? 0 : 1;
-  const uint32_t spike_key = key | (i << 9) | (j << 1) | colour_bit;
+  const uint32_t spike_key = SPECIAL_EVENT_MAX + (key | (i << 9) | (j << 1) | colour_bit);
 
   spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
-  log_debug("%d, %d, %u, %08x\n", i, j, col, spike_key);
+  log_debug("%d, %d, %u, %08x", i, j, col, spike_key);
 }
 
 // gets pixel colour from within word
@@ -189,33 +202,6 @@ static void update_frame ()
     }
   }
 
-// draw 3-digit score
-  int s = score;
-  // Loop through characters
-  for (int k = 0; k < 3; k++)
-  {
-    const int s_x = (GAME_WIDTH / 2) + 3 - (4 * k);
-
-    // Loop through x character pixels
-    for (int i=0; i<3; i++)
-    {
-      // Loop through y character pixels
-      for (int j=0; j<5; j++)
-      {
-        // Set or clear pixel based on 'font' bitmap
-        if (digit[s%10] & (1<<(14-(i+3*j))))
-        {
-          set_pixel_col(s_x + i, 5 + j, COLOUR_SCORE);
-        }
-        else
-        {
-          set_pixel_col(s_x + i, 5 + j, COLOUR_BACKGROUND);
-        }
-      }
-    }
-    s = s/10;
-  }
-
 // draw ball
   if (out_of_play == 0)
   {
@@ -259,10 +245,9 @@ static void update_frame ()
 
       v = -FACT;
       y -= FACT;
-      if (score < 999)
-      {
-        ++score;
-      }
+
+      // Increase score
+      add_score_up_event();
     }
 
 // lost ball
@@ -271,10 +256,9 @@ static void update_frame ()
       v = -1 * FACT;
       y = (GAME_HEIGHT / 2)*FACT;
       out_of_play = OUT_OF_PLAY;
-      if (score > 0)
-      {
-        --score;
-      }
+      
+      // Decrease score
+      add_score_down_event();
     }
     // draw ball
     else

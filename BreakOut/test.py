@@ -32,6 +32,11 @@ class State(enum.IntEnum):
     right = 0
     left = 1
 
+class SpecialEvent(enum.IntEnum):
+    score_up = 0
+    score_down = 1
+    max = 2
+
 state = State.idle
 
 # Open socket to receive datagrams
@@ -42,15 +47,19 @@ spike_socket.setblocking(False)
 # Make awesome CRT palette
 cmap = col.ListedColormap(["black", "green"])
 
-# Create image plot of retina output
-fig = plt.figure()
+# Create image plot to display game screen
+fig, axis = plt.subplots()
 image_data = np.zeros((128, 160))
-image = plt.imshow(image_data,
-                   interpolation="nearest", cmap=cmap,
-                   vmin=0.0, vmax=1.0)
+image = axis.imshow(image_data, interpolation="nearest", cmap=cmap,
+                    vmin=0.0, vmax=1.0)
+
+# Draw score using textbox
+score_text = axis.text(0.5, 1.0, "0", color="green", transform=axis.transAxes,
+                       horizontalalignment="right", verticalalignment="top")
+score = 0
 
 def update_fig(frame):
-    global image_data, image, spike_socket, key_input_connection, state
+    global image_data, image, spike_socket, key_input_connection, state, score, score_text
 
     # If state isn't idle, send spike to key input
     if state != State.idle:
@@ -70,20 +79,42 @@ def update_fig(frame):
             # Slice off EIEIO header and convert to numpy array of uint32
             payload = np.fromstring(raw_data[6:], dtype="uint32")
 
+            # Create mask to select vision (rather than special event) packets
+            vision_event_mask = payload >= SpecialEvent.max
+
             # Extract coordinates
-            x = (payload >> X_SHIFT) & X_MASK
-            y = (payload >> Y_SHIFT) & Y_MASK
-            c = (payload & COLOUR_MASK)
+            vision_payload = payload[vision_event_mask] - SpecialEvent.max
+            x = (vision_payload >> X_SHIFT) & X_MASK
+            y = (vision_payload >> Y_SHIFT) & Y_MASK
+            c = (vision_payload & COLOUR_MASK)
 
             # Set valid pixels
             try:
                 image_data[y, x] = c
             except IndexError as e:
-                print "Packet contains invalid pixels:", payload, x, y, c
+                print "Packet contains invalid pixels:", vision_payload, x, y, c
+
+            # Create masks to select score events and count them
+            num_score_up_events = np.sum(payload == SpecialEvent.score_up)
+            num_score_down_events = np.sum(payload == SpecialEvent.score_down)
+
+            # If any score events occurred
+            if num_score_up_events > 0 or num_score_down_events > 0:
+                # Apply to score count
+                score += num_score_up_events
+                score -= num_score_down_events
+
+                # Update displayed score count
+                score_text.set_text("%u" % score)
 
     # Set image data
     image.set_array(image_data)
-    return [image]
+
+    # Return list of artists which we have updated
+    # **YUCK** order of these dictates sort order
+    # **YUCK** score_text must be returned whether it has
+    # been updated or not to prevent overdraw
+    return [image, score_text]
 
 
 # Play animation

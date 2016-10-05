@@ -102,7 +102,7 @@ class Breakout(
     def n_atoms(self):
         # **TODO** should we calculate this automatically
         # based on log2 of width and height?
-        return 256 * 256 * 2
+        return 2 + (256 * 256 * 2)
 
     # ------------------------------------------------------------------------
     # AbstractGeneratesDataSpecification overrides
