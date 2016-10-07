@@ -51,6 +51,8 @@ class Visualiser(object):
 
         self.colour_mask = (1 << self.colour_bits) - 1
 
+        self.value_mask = (1 << (x_bits + y_bits + self.colour_bits)) - 1
+
         # Open socket to receive datagrams
         self.socket = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.socket.bind(("0.0.0.0", udp_port))
@@ -107,10 +109,11 @@ class Visualiser(object):
                 payload = np.fromstring(raw_data[6:], dtype="uint32")
 
                 # Create mask to select vision (rather than special event) packets
-                vision_event_mask = payload >= SpecialEvent.max
+                payload_value = payload & self.value_mask
+                vision_event_mask = payload_value >= SpecialEvent.max
 
                 # Extract coordinates
-                vision_payload = payload[vision_event_mask] - SpecialEvent.max
+                vision_payload = payload_value[vision_event_mask] - SpecialEvent.max
                 x = (vision_payload >> self.x_shift) & self.x_mask
                 y = (vision_payload >> self.y_shift) & self.y_mask
                 c = (vision_payload & self.colour_mask)
@@ -123,8 +126,8 @@ class Visualiser(object):
                           vision_payload, x, y, c)
 
                 # Create masks to select score events and count them
-                num_score_up_events = np.sum(payload == SpecialEvent.score_up)
-                num_score_down_events = np.sum(payload == SpecialEvent.score_down)
+                num_score_up_events = np.sum(payload_value == SpecialEvent.score_up)
+                num_score_down_events = np.sum(payload_value == SpecialEvent.score_down)
 
                 # If any score events occurred
                 if num_score_up_events > 0 or num_score_down_events > 0:
@@ -133,7 +136,7 @@ class Visualiser(object):
                     self.score -= num_score_down_events
 
                     # Update displayed score count
-                    self.score_text.set_text("%u" % score)
+                    self.score_text.set_text("%u" % self.score)
 
         # Set image data
         self.image.set_array(self.image_data)

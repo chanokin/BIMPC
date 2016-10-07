@@ -113,20 +113,20 @@ static uint32_t tick_in_frame = 0;
 //----------------------------------------------------------------------------
 static inline void add_score_up_event()
 {
-  spin1_send_mc_packet(SPECIAL_EVENT_SCORE_UP, 0, NO_PAYLOAD);
+  spin1_send_mc_packet(key | SPECIAL_EVENT_SCORE_UP, 0, NO_PAYLOAD);
   log_debug("Score up");
 }
 
 static inline void add_score_down_event()
 {
-  spin1_send_mc_packet(SPECIAL_EVENT_SCORE_DOWN, 0, NO_PAYLOAD);
+  spin1_send_mc_packet(key | SPECIAL_EVENT_SCORE_DOWN, 0, NO_PAYLOAD);
   log_debug("Score down");
 }
 
 static inline void add_event(int i, int j, colour_t col)
 {
   const uint32_t colour_bit = (col == COLOUR_BACKGROUND) ? 0 : 1;
-  const uint32_t spike_key = SPECIAL_EVENT_MAX + (key | (i << 9) | (j << 1) | colour_bit);
+  const uint32_t spike_key = key | (SPECIAL_EVENT_MAX + (i << 9) + (j << 1) + colour_bit);
 
   spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
   log_debug("%d, %d, %u, %08x", i, j, col, spike_key);
