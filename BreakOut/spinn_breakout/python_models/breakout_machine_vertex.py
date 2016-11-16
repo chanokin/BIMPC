@@ -24,7 +24,12 @@ class BreakoutMachineVertex(MachineVertex,
 
     def __init__(self, resources_required, constraints=None, label=None):
         # Superclasses
-        MachineVertex.__init__(self, resources_required, label,
+        MachineVertex.__init__(self, label,
                                constraints=constraints)
         ProvidesProvenanceDataFromMachineImpl.__init__(
             self, self._BREAKOUT_REGIONS.PROVENANCE.value, 0)
+        self._resource_required = resources_required
+
+    @property
+    def resources_required(self):
+        return self._resource_required
