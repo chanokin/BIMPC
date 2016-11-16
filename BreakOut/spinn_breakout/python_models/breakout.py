@@ -83,8 +83,7 @@ class Breakout(
         container = ResourceContainer(
             sdram=SDRAMResource(
                 self.BREAKOUT_REGION_BYTES +
-                front_end_common_constants.SYSTEM_BYTES_REQUIREMENT +
-                BreakoutMachineVertex.get_provenance_data_size(0)),
+                front_end_common_constants.SYSTEM_BYTES_REQUIREMENT),
             dtcm=DTCMResource(0),
             cpu_cycles=CPUCyclesPerTickResource(0))
 
@@ -135,7 +134,7 @@ class Breakout(
         spec.reserve_memory_region(
             region=BreakoutMachineVertex._BREAKOUT_REGIONS.BREAKOUT.value,
                     size=self.BREAKOUT_REGION_BYTES, label='BreakoutParams')
-        vertex.reserve_provenance_data_region(spec)
+        # vertex.reserve_provenance_data_region(spec)
 
         # Write setup region
         spec.comment("\nWriting setup region:\n")
