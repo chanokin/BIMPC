@@ -6,6 +6,7 @@ import matplotlib.animation as animation
 import matplotlib.colors as col
 import matplotlib.pyplot as plt
 
+BRIGHT_GREEN = (0.0, 0.9, 0.0)
 # ----------------------------------------------------------------------------
 # InputState
 # ----------------------------------------------------------------------------
@@ -59,7 +60,7 @@ class Visualiser(object):
         self.socket.setblocking(False)
 
         # Make awesome CRT palette
-        cmap = col.ListedColormap(["black", "green"])
+        cmap = col.ListedColormap(["black", BRIGHT_GREEN])
 
         # Create image plot to display game screen
         self.fig, self.axis = plt.subplots()
@@ -68,13 +69,18 @@ class Visualiser(object):
                                       cmap=cmap, vmin=0.0, vmax=1.0)
 
         # Draw score using textbox
-        self.score_text = self.axis.text(0.5, 1.0, "0", color="green",
+        self.score_text = self.axis.text(0.5, 1.0, "0", color=BRIGHT_GREEN,
                                          transform=self.axis.transAxes,
                                          horizontalalignment="right",
                                          verticalalignment="top")
         # Hook key listeners
         self.fig.canvas.mpl_connect("key_press_event", self._on_key_press)
         self.fig.canvas.mpl_connect("key_release_event", self._on_key_release)
+        # Hide grid
+        self.axis.grid(False)
+        self.axis.set_xticklabels([])
+        self.axis.set_yticklabels([])
+        self.axis.axes.get_xaxis().set_visible(False)
 
     # ------------------------------------------------------------------------
     # Public methods
@@ -82,9 +88,9 @@ class Visualiser(object):
     def show(self):
         # Play animation
         self.animation = animation.FuncAnimation(self.fig, self._update,
-                                                 interval=20.0, blit=True)
+                                                 interval=20.0, blit=False)
         # Show animated plot (blocking)
-        plt.show();
+        plt.show()
 
     # ------------------------------------------------------------------------
     # Private methods

@@ -82,10 +82,10 @@ static int u = 1 * FACT;
 static int v = -1 * FACT;
 
 // bat LHS x position
-static int x_bat   = 0;
+static int x_bat   = 40;
 
 // bat length in pixels
-static int bat_len = 8;
+static int bat_len = 16;
 
 // frame buffer: 160 x 128 x 4 bits: [hard/soft, R, G, B]
 static int frame_buff[GAME_WIDTH / 8][GAME_HEIGHT];
