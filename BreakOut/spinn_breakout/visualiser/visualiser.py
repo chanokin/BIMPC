@@ -34,6 +34,9 @@ class Visualiser(object):
 
     def __init__(self, udp_port, key_input_connection,
                  x_res=160, y_res=128, x_bits=8, y_bits=8):
+                     
+        self.x_res = x_res
+        self.y_res = y_res
         # Reset input state
         self.input_state = InputState.idle
 
@@ -64,9 +67,10 @@ class Visualiser(object):
 
         # Create image plot to display game screen
         self.fig, self.axis = plt.subplots()
-        self.image_data = np.zeros((y_res, x_res))
+        self.image_data = np.zeros((y_res, x_res, 3), np.uint8)
         self.image = self.axis.imshow(self.image_data, interpolation="nearest",
-                                      cmap=cmap, vmin=0.0, vmax=1.0)
+                                      # cmap=cmap, vmin=0.0, vmax=1.0
+                                     )
 
         # Draw score using textbox
         self.score_text = self.axis.text(0.5, 1.0, "0", color=BRIGHT_GREEN,
@@ -100,6 +104,8 @@ class Visualiser(object):
         if self.input_state != InputState.idle:
             self.key_input_connection.send_spike("key_input", self.input_state)
 
+        # self.image_data[:] = np.uint8(self.image_data*0.7)
+        self.image_data[:] = 0
         # Read all datagrams received during last frame
         while True:
             try:
@@ -123,10 +129,11 @@ class Visualiser(object):
                 x = (vision_payload >> self.x_shift) & self.x_mask
                 y = (vision_payload >> self.y_shift) & self.y_mask
                 c = (vision_payload & self.colour_mask)
-
+                
+                crd = np.where(np.logical_and( x < self.x_res, y < self.y_res ))
                 # Set valid pixels
                 try:
-                    self.image_data[y, x] = c
+                    self.image_data[y[crd], x[crd], c[crd]] = 200
                 except IndexError as e:
                     print("Packet contains invalid pixels:",
                           vision_payload, x, y, c)

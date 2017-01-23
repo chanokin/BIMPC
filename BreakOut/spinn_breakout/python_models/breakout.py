@@ -63,7 +63,12 @@ class Breakout(
         # **NOTE** n_neurons currently ignored - width and height will be
         # specified as additional parameters, forcing their product to be
         # duplicated in n_neurons seems pointless
-
+        
+        # *** NOTE *** we use n_neurons to establish wether it's a production (1)
+        # or a testing (2) scenario. A testing environment will reduce resolution
+        # to a quarter.
+        self.testing = True if n_neurons == 2 else False
+        
         # Superclasses
         ApplicationVertex.__init__(
             self, label, constraints, self.n_atoms)
@@ -101,7 +106,11 @@ class Breakout(
     def n_atoms(self):
         # **TODO** should we calculate this automatically
         # based on log2 of width and height?
-        return 2 + (256 * 256 * 2)
+        return 2 +(256 * 256 * 2)
+        # if self.testing:
+            # return 2 + (64 * 32 * 2)
+        # else:
+            # return 2 + (256 * 128 * 2)
 
     # ------------------------------------------------------------------------
     # AbstractGeneratesDataSpecification overrides
@@ -159,7 +168,10 @@ class Breakout(
     # ------------------------------------------------------------------------
     @overrides(AbstractHasAssociatedBinary.get_binary_file_name)
     def get_binary_file_name(self):
-        return "breakout.aplx"
+        if self.testing:
+            return "breakout_test.aplx"
+        else:
+            return "breakout.aplx"
 
     # ------------------------------------------------------------------------
     # AbstractProvidesOutgoingPartitionConstraints overrides
