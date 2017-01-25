@@ -19,6 +19,7 @@ class LGN():
         self.cfg     = cfg
         self.sim     = simulator
         self.retina  = retina
+        self.channels = ['on', 'off']
         
         self.width   = retina.width
         self.height  = retina.height
@@ -32,10 +33,6 @@ class LGN():
         self.height4 = retina.filter_height4
         self.size4   = retina.filter_size4
 
-        self.ssamp_width = retina.subsamp_width
-        self.ssamp_height = retina.subsamp_height
-        self.ssamp_size = retina.subsamp_size
-        
         print("\tBuilding kernels...")
         self.build_kernels()
         print("\t\tdone!")
@@ -104,16 +101,16 @@ class LGN():
                                                   cfg['start_col'], 
                                                   cfg['start_row'])
         
-        tmp, inh[:] = conn_krn.full_kernel_connector(self.width2,
-                                                     self.height2,
-                                                     self.split_cs[INH],
-                                                     cfg['kernel_exc_delay'],
-                                                     cfg['kernel_inh_delay'],
-                                                     cfg['col_step'], 
-                                                     cfg['row_step'],
-                                                     cfg['start_col'], 
-                                                     cfg['start_row'],
-                                                     remove_inh_only=False)
+        tmp[:], inh[:] = conn_krn.full_kernel_connector(self.width2,
+                                                        self.height2,
+                                                        self.split_cs[INH],
+                                                        cfg['kernel_exc_delay'],
+                                                        cfg['kernel_inh_delay'],
+                                                        cfg['col_step'], 
+                                                        cfg['row_step'],
+                                                        cfg['start_col'], 
+                                                        cfg['start_row'],
+                                                        remove_inh_only=False)
         conns['split2'] = [exc, inh]
         
         exc, inh = conn_krn.full_kernel_connector(self.width4,
@@ -126,40 +123,17 @@ class LGN():
                                                   cfg['start_col'], 
                                                   cfg['start_row'])
         
-        tmp, inh[:] = conn_krn.full_kernel_connector(self.width4,
-                                                     self.height4,
-                                                     self.split_cs[INH],
-                                                     cfg['kernel_exc_delay'],
-                                                     cfg['kernel_inh_delay'],
-                                                     cfg['col_step'], 
-                                                     cfg['row_step'],
-                                                     cfg['start_col'], 
-                                                     cfg['start_row'],
-                                                     remove_inh_only=False)
+        tmp[:], inh[:] = conn_krn.full_kernel_connector(self.width4,
+                                                        self.height4,
+                                                        self.split_cs[INH],
+                                                        cfg['kernel_exc_delay'],
+                                                        cfg['kernel_inh_delay'],
+                                                        cfg['col_step'], 
+                                                        cfg['row_step'],
+                                                        cfg['start_col'], 
+                                                        cfg['start_row'],
+                                                        remove_inh_only=False)
         conns['split4'] = [exc, inh]
-
-        exc, inh = conn_krn.full_kernel_connector(self.retina.subsamp_width,
-                                                  self.retina.subsamp_height,
-                                                  self.split_cs[EXC],
-                                                  cfg['kernel_exc_delay'],
-                                                  cfg['kernel_inh_delay'],
-                                                  cfg['col_step'], 
-                                                  cfg['row_step'],
-                                                  cfg['start_col'], 
-                                                  cfg['start_row'])
-        
-        tmp, inh[:] = conn_krn.full_kernel_connector(self.retina.subsamp_width,
-                                                     self.retina.subsamp_height,
-                                                     self.split_cs[INH],
-                                                     cfg['kernel_exc_delay'],
-                                                     cfg['kernel_inh_delay'],
-                                                     cfg['col_step'], 
-                                                     cfg['row_step'],
-                                                     cfg['start_col'], 
-                                                     cfg['start_row'],
-                                                     remove_inh_only=False)
-        conns['subsamp'] = [exc, inh]
-
 
         self.conns = conns
         
@@ -172,34 +146,32 @@ class LGN():
         inh_parm = cfg['inh_cell']['params']
         
         pops = {}
-        
-        for k in self.retina.get_output_keys():
-            # print('lgn - populations - key: %s'%k)
-            if k == 'cs4':
-                popsize = self.size4
-            elif k == 'cs2':
-                popsize = self.size2
-            elif k.startswith('dir'):
-                popsize = self.ssamp_size
-            else:
-                popsize = self.size
+        for c in self.channels:
+            pops[c] = {}
+            for k in self.retina.get_output_keys():
+                # print('lgn - populations - key: %s'%k)
+                if k == 'cs4':
+                    popsize = self.size4
+                elif k == 'cs2':
+                    popsize = self.size2
+                else:
+                    popsize = self.size
 
-            pops[k] = {}
-            pops[k]['inter']   = sim.Population(popsize,
-                                                inh_cell, inh_parm,
-                                                label='LGN inter %s'%k)
-            pops[k]['output']  = sim.Population(popsize,
-                                                exc_cell, exc_parm,
-                                                label='LGN output %s'%k)
+                pops[c][k] = {}
+                pops[c][k]['inter']   = sim.Population(popsize,
+                                                    inh_cell, inh_parm,
+                                                    label='LGN inter %s %s'%(c, k))
+                pops[c][k]['output']  = sim.Population(popsize,
+                                                    exc_cell, exc_parm,
+                                                    label='LGN output %s %s'%(c, k))
 
-            if cfg['record']['voltages']:
-                pops[k]['inter'].record_v()
-                pops[k]['output'].record_v()
+                if cfg['record']['voltages']:
+                    pops[c][k]['inter'].record_v()
+                    pops[c][k]['output'].record_v()
 
-            if cfg['record']['spikes']:
-                pops[k]['inter'].record()
-                pops[k]['output'].record()
-            
+                if cfg['record']['spikes']:
+                    pops[c][k]['inter'].record()
+                    pops[c][k]['output'].record()
             
         self.pops = pops
 
@@ -208,37 +180,38 @@ class LGN():
         sim = self.sim
         cfg = self.cfg
         projs = {}
-        for k in self.retina.get_output_keys():
-            # print('lgn - projections - key: %s'%k)
-            
-            projs[k] = {}
-            o2o = sim.OneToOneConnector(weights=cfg['w2s'],
-                                        delays=cfg['kernel_inh_delay'])
-            # print("src size: %d"%self.retina.pops['off'][k]['ganglion'].size) 
-            # print("dst size: %d"%self.pops[k]['inter'].size)
-            projs[k]['inter'] = sim.Projection(self.retina.pops['off'][k]['ganglion'],
-                                               self.pops[k]['inter'], o2o,
-                                               target='excitatory')
+        for c in self.channels:
+            projs[c] = {}
+            for k in self.retina.get_output_keys():
+                # print('lgn - projections - key: %s'%k)
+                
+                projs[c][k] = {}
+                o2o = sim.OneToOneConnector(weights=cfg['w2s'],
+                                            delays=cfg['kernel_inh_delay'])
+                # print("src size: %d"%self.retina.pops['off'][k]['ganglion'].size) 
+                # print("dst size: %d"%self.pops[k]['inter'].size)
+                projs[c][k]['inter'] = sim.Projection(self.retina.pops[c][k]['ganglion'],
+                                                   self.pops[c][k]['inter'], o2o,
+                                                   target='excitatory')
 
-            if k == 'cs4':
-                split = self.conns['split4']
-            elif k == 'cs2':
-                split = self.conns['split2']
-            elif k.startswith('dir'):
-                split = self.conns['subsamp']
-            else:
-                split = self.conns['split']
+                if k == 'cs4':
+                    split = self.conns['split4']
+                elif k == 'cs2':
+                    split = self.conns['split2']
+                else:
+                    split = self.conns['split']
 
-            flc = sim.FromListConnector(split[EXC])
-            projs[k]['inh'] = sim.Projection(self.retina.pops['on'][k]['ganglion'], 
-                                             self.pops[k]['output'], flc,
-                                             target='excitatory')
+                flc = sim.FromListConnector(split[EXC])
+                projs[c][k]['exc'] = sim.Projection(self.retina.pops[c][k]['ganglion'], 
+                                                    self.pops[c][k]['output'], flc,
+                                                    target='excitatory')
 
-            flc = sim.FromListConnector(split[INH]) #conns['cs']?
-            projs[k]['inh'] = sim.Projection(self.pops[k]['inter'], 
-                                             self.pops[k]['output'], flc,
-                                             target='inhibitory')
+                cntr_c = 'off' if c == 'on' else 'on'
+                flc = sim.FromListConnector(split[INH]) #conns['cs']?
+                projs[c][k]['inh'] = sim.Projection(self.pops[cntr_c][k]['inter'], 
+                                                    self.pops[c][k]['output'], flc,
+                                                    target='inhibitory')
 
-        self.projs = projs
+            self.projs = projs
 
         

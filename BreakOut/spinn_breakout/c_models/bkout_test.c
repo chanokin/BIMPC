@@ -43,7 +43,7 @@
 #define FRAME_DELAY 20
 
 // ball position and velocity scale factor
-#define FACT 32
+#define FACT 1
 
 //----------------------------------------------------------------------------
 // Enumerations
@@ -139,6 +139,8 @@ static inline void add_event(int i, int j, colour_t col)
                                     + (j << VERT_SHIFT) + colour_bit);
 
   spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
+  // spin1_delay_us(500);
+  // spin1_send_mc_packet(spike_key, 0, NO_PAYLOAD);
   log_debug("%d, %d, %u, %08x", i, j, col, spike_key);
 }
 
@@ -337,6 +339,7 @@ void timer_callback(uint ticks, uint dummy)
   // **NOTE** ticks starts at 1!
   if (!infinite_run && (ticks - 1) >= simulation_ticks)
   {
+    spin1_pause();
     return;
   }
   // Otherwise

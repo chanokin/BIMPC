@@ -9,9 +9,9 @@ def row_col_to_input(row, col, is_on_input, width, height, row_bits):
     
     idx = idx | (row << 1)
     idx = idx | (col << (row_bits + 1))
-
+    
     #add two to allow for special event bits
-    idx = idx + 2
+    # idx += 2
     
     return idx
 
@@ -27,12 +27,12 @@ def row_col_to_input_breakout(row, col, is_on_input, row_bits):
     idx = idx | (col << (row_bits + 1))
     
     #add two to allow for special event bits
-    idx = idx + 2
+    # idx=idx+2
     
     return idx
 
 
-def row_col_to_input_subsamp(self, row, col, is_on_input, row_bits):
+def row_col_to_input_subsamp(row, col, is_on_input, row_bits):
     idx = np.uint32(0)
 
     if is_on_input:

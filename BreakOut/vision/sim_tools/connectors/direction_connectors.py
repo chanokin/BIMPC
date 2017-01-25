@@ -24,12 +24,12 @@ def direction_connection_angle(direction, max_angle, max_dist,
     inh = []
     # sys.stdout.write("\t\tPercent %03d"%0)
     on_chan = True
-    for r in range(height):
+    for y in range(height):
         # sys.stdout.write( "\r\t\tPercent %03d"%( (r*100.)/height ) ) 
         # sys.stdout.flush() 
-        for c in range(width):
+        for x in range(width):
             on_chan = True
-            exc[:], inh[:] = dcah(direction, max_angle, max_dist, c, r, 
+            exc[:], inh[:] = dcah(direction, max_angle, max_dist, x, y, 
                                   width, height, mapfunc, on_chan, 
                                   exc_delay, inh_delay,
                                   dfunc=dfunc, weight=weight)  
@@ -38,7 +38,7 @@ def direction_connection_angle(direction, max_angle, max_dist,
                 inh_conns_on += inh
                 
             on_chan = False
-            exc[:], inh[:] = dcah(direction, max_angle, max_dist, c, r, 
+            exc[:], inh[:] = dcah(direction, max_angle, max_dist, x, y, 
                                   width, height, mapfunc, on_chan,
                                   exc_delay, inh_delay, 
                                   dfunc=dfunc, weight=weight)  
@@ -55,28 +55,26 @@ def direction_connection_angle_helper(direction, max_angle, max_dist,
                                       mapfunc, is_on_channel,
                                       exc_delay, inh_delay,
                                       dfunc=lambda x: x, weight=2.,
-                                      inh_width_mult=3.
+                                      inh_width_mult=6.
                                      ):
     deg2rad = np.pi/180.
-    hes, his = 1, -1
-    ves, vis = 1, -1
     dang = 0
-    if   direction == 'left2right':
+    if   direction == 'right2left':
         dang = 0
-        hes, his = -1,  1
-        ves, vis =  1,  1
-    elif direction == 'right2left':
-        dang = 0
-        hes, his =  1, -1
-        ves, vis =  1,  1
-    elif direction == 'top2bottom':
-        dang = 90
-        hes, his =  1,  1
-        ves, vis = -1,  1
+    elif direction == 'bl2tr':
+        dang = 45
     elif direction == 'bottom2top':
         dang = 90
-        hes, his =  1,  1
-        ves, vis =  1, -1
+    elif direction == 'br2tl':
+        dang = 135
+    elif direction == 'left2right':
+        dang = 180
+    elif direction == 'tl2br':
+        dang = 225
+    elif direction == 'top2bottom':
+        dang = 270
+    elif direction == 'tr2bl':
+        dang = 315
     else:
         raise Exception("Not a valid direction - %s -"%(direction))
     
@@ -98,13 +96,16 @@ def direction_connection_angle_helper(direction, max_angle, max_dist,
                 coord[xd] = {yd: 0}
 
             if new_c:
-                xe, ye = start_x + hes*xd, start_y + ves*yd
+                xe, ye = start_x + xd, start_y + yd
                 src = mapfunc(ye, xe, chan)
                 if 0 <= xe < width and 0 <= ye < height:
                     e.append( (src, dst, weight, delay+exc_delay) )
-                    
-                xi, yi = start_x + his*xd, start_y + vis*yd
+                
+                xd = int(np.round( d*np.cos((a+dang+180)*deg2rad) ))
+                yd = int(np.round( d*np.sin((a+dang+180)*deg2rad) ))
+                xi, yi = start_x + xd, start_y + yd
                 src = mapfunc(yi, xi, chan)
+                
                 if 0 <= xi < width and 0 <= yi < height:
                     i.append( (src, dst, -weight*inh_width_mult, inh_delay) )
             
@@ -115,7 +116,8 @@ def direction_connection_angle_helper(direction, max_angle, max_dist,
 
 
 
-def direction_connection(direction, x_res, y_res, div, delays, weight):
+def direction_connection(direction, x_res, y_res, div, delays, weight,
+                          mapfunc):
     
     # subY_BITS=int(np.ceil(np.log2(y_res)))
     connection_list_on  = []
@@ -123,6 +125,8 @@ def direction_connection(direction, x_res, y_res, div, delays, weight):
     connection_list_inh_on = []
     connection_list_inh_off = []
     add_exc = False
+    src_on = 0
+    src_off = 0
     #direction connections
     for j in range(y_res):
         for i in range(x_res):
@@ -134,7 +138,8 @@ def direction_connection(direction, x_res, y_res, div, delays, weight):
                     #check targets are within range
                     if( ((i+k) < x_res) and ((j+k) < y_res) ):
                         add_exc = True
-                        src = (j+k)*x_res + i+k
+                        src_on  = mapfunc((j+k), i+k, 1)
+                        src_off = mapfunc((j+k), i+k, 0)
                 
                 elif direction=="south west":
                     #south west connections
@@ -148,50 +153,56 @@ def direction_connection(direction, x_res, y_res, div, delays, weight):
                     #check targets are within range
                     if(((i+k)<=(x_res-1)) and ((j-k)>=0)):  
                         add_exc = True 
-                        src = (j-k)*x_res + i+k
+                        src_on  = mapfunc((j-k), i+k, 1)
+                        src_off = mapfunc((j-k), i+k, 0)
                                         
                 elif direction=="north west":
                     #north east connections
                     #check targets are within range
                     if((i-k)>=0 and ((j-k)>=0)):   
                         add_exc = True
-                        src = (j-k)*x_res + i-k
+                        src_on  = mapfunc((j-k), i-k, 1)
+                        src_off = mapfunc((j-k), i-k, 0)
                                         
                 elif direction=="north":
                     #north connections
                     #check targets are within range
                     if((j-k)>=0):   
                         add_exc = True
-                        src = (j-k)*x_res + i
+                        src_on  = mapfunc((j-k), i, 1)
+                        src_off = mapfunc((j-k), i, 0)
                 
                 elif direction=="south":
                     #north connections
                     #check targets are within range
                     if((j+k)<=(y_res-1)):   
                         add_exc = True
-                        src = (j+k)*x_res + i
+                        src_on  = mapfunc((j+k), i, 1)
+                        src_off = mapfunc((j+k), i, 0)
                         
                 elif direction=="east":
                     #north connections
                     #check targets are within range
                     if((i+k)<=(x_res-1)):   
                         add_exc = True
-                        src = j*x_res + i+k
+                        src_on  = mapfunc(j, i+k, 1)
+                        src_off = mapfunc(j, i+k, 0)
                         
                 elif direction=="west":
                     #north connections
                     #check targets are within range
                     if((i-k)>=0):   
                         add_exc = True
-                        src = j*x_res + i-k
+                        src_on  = mapfunc(j, i-k, 1)
+                        src_off = mapfunc(j, i-k, 0)
                         
                 else:
                     raise Exception( "Not a valid direction: %s"%direction )
 
                 #ON channels
-                connection_list_on.append((src, dst, weight, Delay))
+                connection_list_on.append((src_on, dst, weight, Delay))
                 #OFF channels
-                connection_list_off.append((src, dst, weight, Delay))
+                connection_list_off.append((src_off, dst, weight, Delay))
                 add_exc = False
 
     return [connection_list_on, connection_list_inh_on], \

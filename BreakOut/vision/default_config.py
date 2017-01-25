@@ -22,9 +22,9 @@ inh_cell_params = { 'cm': 0.3,  # nF
                     'v_thresh': -58.
                   }
 
-w2s = 3.#1.7
+w2s = 2.
 inh_w2s = 2.
-dir_w2s = 0.9#0.65
+dir_w2s = 1.1 #0.5
 ssamp_w2s = 3.
 
 defaults_retina = {'kernel_width': 3,
@@ -33,7 +33,8 @@ defaults_retina = {'kernel_width': 3,
                    'corr_self_delay': 4.,
                    'row_step': 1, 'col_step': 1,
                    'start_row': 0, 'start_col': 0,
-                   'gabor': False,#{'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 3},
+                  #  'gabor': {'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 3},
+                   'gabor': False,
                    
                    'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7, 'width': 3, 
                                'step': 1, 'start':0, 'w2s_mult':1.},
@@ -42,7 +43,8 @@ defaults_retina = {'kernel_width': 3,
                    'ctr_srr_quarter': {'std_dev': 4., 'sd_mult': 6.7, 
                                        'width': 15,
                                        'step': 6, 'start': 0, 'w2s_mult': 8.},
-                   'w2s': w2s,
+                    #retina receives 1 spike per change, needs huge weights
+                   'w2s': w2s*1.5, 
                    'inhw': inh_w2s,
                    'inh_cell': {'cell': inh_cell,
                                'params': inh_cell_params,
@@ -54,20 +56,21 @@ defaults_retina = {'kernel_width': 3,
                               'spikes': False,
                              },
                    'direction': {'keys': [
-                                          # 'left2right', 'right2left',
-                                          # 'bottom2top', 'top2bottom',
-                                          'east', 'south', 'west', 'north',
-                                          'south east', 'south west', 
-                                          'north east', 'north west'
+                                          'left2right', 'right2left',
+                                          'bottom2top', 'top2bottom',
+                                          'bl2tr', 'tl2br', 'br2tl', 'tr2bl',
+                                          # 'east', 'south', 'west', 'north',
+                                          # 'south east', 'south west', 
+                                          # 'north east', 'north west'
                                          ],
-                                 'div': 6,
+                                 'div': 4,#6,
                                  'weight': dir_w2s,
-                                 'delays': [1, 2, 2, 2, 3, 4 ],
+                                 'delays': [1, 4, 6, 8],#, 3, 4 ],
                                  'subsamp': 1,#2,
                                  'w2s': ssamp_w2s,
-                                 'angle': 6,
-                                 'dist': 5,
-                                 'dfunc': lambda x: x,
+                                 'angle': 5,
+                                 'dist': 4,
+                                 'dfunc': lambda x: 33*(x-1) + 1, # 33ms = 1000/framerate
                                  
                                 },
                   'row_bits': 8,
@@ -81,7 +84,7 @@ defaults_lgn = {'kernel_width': 3,
                 'start_row': 0, 'start_col': 0,
                 'gabor': {'num_divs': 7., 'freq': 5., 'std_dev': 1.1},
                 'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7} ,
-                'w2s': w2s,
+                'w2s': w2s*1.1,
                 'inh_cell': {'cell': inh_cell,
                              'params': inh_cell_params
                             }, 

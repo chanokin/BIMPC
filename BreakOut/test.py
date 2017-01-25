@@ -4,22 +4,31 @@ from spynnaker_external_devices_plugin.pyNN.connections.\
 import spynnaker_external_devices_plugin.pyNN as ex
 import spinn_breakout
 
-# Layout of pixels
-X_BITS = 8
-Y_BITS = 8
 
-# Game resolution
-X_RESOLUTION = 160
-Y_RESOLUTION = 128
+TESTING = True
+# TESTING = False
+# Game resolution, coords layout in packet
+if TESTING:
+    X_RESOLUTION = 40
+    Y_RESOLUTION = 32
+    X_BITS = 8
+    Y_BITS = 8
+    N_NEURON = 2
+else:
+    X_RESOLUTION = 160
+    Y_RESOLUTION = 128
+    X_BITS = 8
+    Y_BITS = 8
+    N_NEURON = 1
 
 # UDP port to read spikes from
-UDP_PORT = 17893
+UDP_PORT = 19993#17893
 
 # Setup pyNN simulation
 sim.setup(timestep=1.0)
 
 # Create breakout population and activate live output for it
-breakout_pop = sim.Population(1, spinn_breakout.Breakout, {}, label="breakout")
+breakout_pop = sim.Population(N_NEURON, spinn_breakout.Breakout, {}, label="breakout")
 ex.activate_live_output_for(breakout_pop, host="0.0.0.0", port=UDP_PORT)
 
 # Create spike injector to inject keyboard input into simulation

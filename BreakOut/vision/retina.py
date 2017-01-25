@@ -6,7 +6,14 @@ from sim_tools.connectors import direction_connectors as dir_conn
 from sim_tools.connectors import mapping_funcs as mapf
 
 from scipy.signal import convolve2d, correlate2d
+
 from default_config import defaults_retina as defaults
+
+
+
+
+
+
 
 class Retina():
     
@@ -50,10 +57,6 @@ class Retina():
                     'off': camera_pop if dvs_mode==dvs_modes[0] else camera_pop[OFF],
                    }
         
-        self.subsamp_width = width//cfg['direction']['subsamp']
-        self.subsamp_height = height//cfg['direction']['subsamp']
-        self.subsamp_size = self.subsamp_width*self.subsamp_height
-        
         self.sim = simulator
         
         self.cfg = cfg
@@ -92,17 +95,14 @@ class Retina():
     def build_kernels(self):
         def a2k(a):
             return 'gabor_%d'%( int( a ) )
-            
-        cfg = self.cfg
-        s2 = np.sqrt(2)
-        c = 4.*(1+s2)
-        self.cs = conv2one( np.array([[-s2, -1, -s2], [-1, c, -1], [-s2, -1, -s2]]) )[0]
-        # self.cs = krn_cs.center_surround_kernel(cfg['ctr_srr']['width'],
-                                                # cfg['ctr_srr']['std_dev'], 
-                                                # cfg['ctr_srr']['sd_mult'])
-        self.cs *= cfg['w2s']*cfg['ctr_srr']['w2s_mult']
-        self.corr = {'cs': correlate2d(self.cs, self.cs, mode='same')}
         
+        corr = {}
+        cfg = self.cfg
+        self.cs = krn_cs.center_surround_kernel(cfg['ctr_srr']['width'],
+                                                cfg['ctr_srr']['std_dev'], 
+                                                cfg['ctr_srr']['sd_mult'])
+        self.cs *= cfg['w2s']*cfg['ctr_srr']['w2s_mult']
+        corr['cs'] = correlate2d(self.cs, self.cs, mode='same')
         
         cfg = self.cfg
         self.cs2 = krn_cs.center_surround_kernel(cfg['ctr_srr_half']['width'],
@@ -124,30 +124,27 @@ class Retina():
                                       cfg['gabor']['std_dev'], 
                                       cfg['gabor']['freq'])
             self.gab = {a2k(k): gab[k]*cfg['w2s'] for k in gab.keys()}
+            # for k in self.gab:
+            #     self.corr[k] = convolve2d(self.gab[k], self.gab[k], mode='same')
 
-        
+        self.corr = corr
 
     def build_connectors(self):
         cfg = self.cfg
         self.conns = {'off': {}, 'on':{}}
         self.lat_conns = {'off': {}, 'on':{}}
         row_col_to_input = self.row_col_to_input
-        
-        self.conns['off']['cs'] = conn_krn.full_kernel_connector(self.width,
-                                            self.height, self.cs,
-                                            exc_delay=cfg['kernel_exc_delay'],
-                                            inh_delay=cfg['kernel_inh_delay'],
-                                            map_to_src=row_col_to_input,
-                                            on_path=False)
 
-        self.conns['on']['cs']  = conn_krn.full_kernel_connector(self.width,
+        for k in self.conns:
+            on_path = (k == 'on')
+            self.conns[k]['cs'] = conn_krn.full_kernel_connector( self.width,
                                             self.height, self.cs,
                                             exc_delay=cfg['kernel_exc_delay'],
                                             inh_delay=cfg['kernel_inh_delay'],
                                             map_to_src=row_col_to_input,
-                                            on_path=True)
-                                                                 
-        self.conns['on']['cs2'] =  conn_krn.full_kernel_connector(self.width,
+                                            on_path=on_path )
+
+            self.conns[k]['cs2'] =  conn_krn.full_kernel_connector(self.width,
                                             self.height, self.cs2,
                                             cfg['kernel_exc_delay'],
                                             cfg['kernel_inh_delay'],
@@ -156,20 +153,9 @@ class Retina():
                                             col_start=cfg['ctr_srr_half']['start'], 
                                             row_start=cfg['ctr_srr_half']['start'], 
                                             map_to_src=row_col_to_input,
-                                            on_path=True)
+                                            on_path=on_path)
                                                                   
-        self.conns['off']['cs2'] = conn_krn.full_kernel_connector(self.width,
-                                            self.height, self.cs2,
-                                            cfg['kernel_exc_delay'],
-                                            cfg['kernel_inh_delay'],
-                                            col_step=cfg['ctr_srr_half']['step'], 
-                                            row_step=cfg['ctr_srr_half']['step'],
-                                            col_start=cfg['ctr_srr_half']['start'], 
-                                            row_start=cfg['ctr_srr_half']['start'], 
-                                            map_to_src=row_col_to_input,
-                                            on_path=False)
-
-        self.conns['on']['cs4'] =  conn_krn.full_kernel_connector(self.width,
+            self.conns[k]['cs4'] =  conn_krn.full_kernel_connector(self.width,
                                             self.height, self.cs4,
                                             cfg['kernel_exc_delay'],
                                             cfg['kernel_inh_delay'],
@@ -178,19 +164,7 @@ class Retina():
                                             col_start=cfg['ctr_srr_quarter']['start'], 
                                             row_start=cfg['ctr_srr_quarter']['start'], 
                                             map_to_src=row_col_to_input,
-                                            on_path=True)
-        
-        self.conns['off']['cs4'] = conn_krn.full_kernel_connector(self.width,
-                                            self.height, self.cs4,
-                                            cfg['kernel_exc_delay'],
-                                            cfg['kernel_inh_delay'],
-                                            col_step=cfg['ctr_srr_quarter']['step'], 
-                                            row_step=cfg['ctr_srr_quarter']['step'],
-                                            col_start=cfg['ctr_srr_quarter']['start'], 
-                                            row_start=cfg['ctr_srr_quarter']['start'], 
-                                            map_to_src=row_col_to_input,
-                                            on_path=False)
-
+                                            on_path=on_path)
 
 
         if cfg['gabor']:
@@ -218,17 +192,27 @@ class Retina():
                                                         row_start=cfg['start_row'], 
                                                         map_to_src=row_col_to_input,
                                                         on_path=True)
-
-        ssamp_div = cfg['direction']['subsamp']
         
         for dk in cfg['direction']['keys']:
             k = "dir: %s"%dk
-            conns =  dir_conn.direction_connection(dk, \
-                                              self.subsamp_width,
-                                              self.subsamp_height,
-                                              cfg['direction']['div'],
-                                              cfg['direction']['delays'],
-                                              cfg['direction']['weight'])
+            if '2' in dk:
+                conns = dir_conn.direction_connection_angle(dk, 
+                                               cfg['direction']['angle'],
+                                               cfg['direction']['dist'], 
+                                               self.width, self.height, 
+                                               self.row_col_to_input_breakout,
+                                               cfg['kernel_exc_delay'],
+                                               cfg['kernel_inh_delay'],
+                                               dfunc=cfg['direction']['dfunc'], 
+                                               weight=cfg['direction']['weight'])
+            else:
+                conns =  dir_conn.direction_connection(dk, \
+                                                self.width, self.height,
+                                                cfg['direction']['div'],
+                                                cfg['direction']['delays'],
+                                                cfg['direction']['weight'],
+                                                self.row_col_to_input_breakout)
+            
             self.conns['on'][k], self.conns['off'][k] = conns
 
 ######################################
@@ -249,13 +233,6 @@ class Retina():
         
         self.extra_conns['o2o'] = conns
         
-        self.extra_conns['subsamp'] = dir_conn.subsample_connection(\
-                                        self.filter_width,
-                                        self.filter_height, 
-                                        cfg['direction']['subsamp'],
-                                        cfg['direction']['w2s'],
-                                        self.row_col_to_input_breakout)
-        
         #bipolar to interneuron 
         conns = conn_std.one2one(self.filter_size,
                                  weight=cfg['inhw'], 
@@ -272,40 +249,28 @@ class Retina():
                                  delay=cfg['kernel_inh_delay'])
         self.extra_conns['inter4'] = conns
 
-        conns = conn_std.one2one(self.subsamp_size,
-                                 weight=cfg['inhw'], 
-                                 delay=cfg['kernel_inh_delay'])
-        self.extra_conns['interSS'] = conns
-
-        
         #bipolar/interneuron to ganglion
         conns = conn_krn.full_kernel_connector(self.filter_width, 
                                                self.filter_height,
-                                               self.corr['cs'], #self.cs,
+                                               self.corr['cs'],
                                                cfg['kernel_exc_delay']+1,
                                                cfg['kernel_inh_delay'])
         self.extra_conns['cs'] = conns
 
         conns = conn_krn.full_kernel_connector(self.filter_width2, 
                                                self.filter_height2,
-                                               self.corr['cs'], #self.cs,
+                                               self.corr['cs'],
                                                cfg['kernel_exc_delay']+1,
                                                cfg['kernel_inh_delay'])
         self.extra_conns['cs2'] = conns
 
         conns = conn_krn.full_kernel_connector(self.filter_width4, 
                                                self.filter_height4,
-                                               self.corr['cs'], #self.cs,
+                                               self.corr['cs'],
                                                cfg['kernel_exc_delay']+1,
                                                cfg['kernel_inh_delay'])
         self.extra_conns['cs4'] = conns
         
-        conns = conn_krn.full_kernel_connector(self.subsamp_width, 
-                                               self.subsamp_height,
-                                               self.corr['cs'], #self.cs,
-                                               cfg['kernel_exc_delay']+1,
-                                               cfg['kernel_inh_delay'])
-        self.extra_conns['csSS'] = conns
 
 
                                             
@@ -345,40 +310,27 @@ class Retina():
                 if cfg['record']['spikes']:
                     self.pops[k]['cam_inter'].record()
         
-        ssp_div = cfg['direction']['subsamp']
-        self.ssamp = {}
-        for k in self.conns.keys():
-            self.ssamp[k] = sim.Population( self.subsamp_size,
-                                            exc_cell, exc_parm,
-                                            label='subsample channel %s'%k )
-            if cfg['record']['voltages']:
-               self.ssamp[k].record_v()
 
-            if cfg['record']['spikes']:
-                self.ssamp[k].record()
-        
         for k in self.conns.keys():
             for p in self.conns[k].keys():
                 if p == 'cs4':
                     filter_size = self.filter_size4
                 elif p == 'cs2':
                     filter_size = self.filter_size2
-                elif p.startswith('dir'):
-                    filter_size = self.subsamp_size
                 else:
                     filter_size = self.filter_size
                 
                 self.pops[k][p] = {'bipolar': sim.Population(filter_size,
                                                              exc_cell, exc_parm,
-                                                             label='bipolar_%s_%s'%(k, p)),
+                                                             label='Retina: bipolar_%s_%s'%(k, p)),
                                                              
                                    'inter':   sim.Population(filter_size,
                                                              inh_cell, inh_parm,
-                                                             label='inter_%s_%s'%(k, p)),
+                                                             label='Retina: inter_%s_%s'%(k, p)),
                                                              
                                    'ganglion':  sim.Population(filter_size,
                                                                exc_cell, exc_parm,
-                                                               label='ganglion_%s_%s'%(k, p)),
+                                                               label='Retina: ganglion_%s_%s'%(k, p)),
                                   } 
                 if cfg['record']['voltages']:
                    self.pops[k][p]['bipolar'].record_v()
@@ -419,35 +371,21 @@ class Retina():
                                      sim.FromListConnector(conn),
                                      target='excitatory')            
                 self.projs[k]['cam_inter']['cam2intr'] = [exc]
-        
-        #subsampling
-        flc = sim.FromListConnector(self.extra_conns['subsamp'][ON])
-        self.projs['on']['subsamp'] = sim.Projection(self.cam[k],
-                                                     self.ssamp['on'],
-                                                     flc,
-                                                     target='excitatory')
-        flc = sim.FromListConnector(self.extra_conns['subsamp'][OFF])
-        self.projs['off']['subsamp'] = sim.Projection(self.cam[k],
-                                                      self.ssamp['off'],
-                                                      flc,
-                                                      target='excitatory')
-        
+
         #bipolar, interneurons and ganglions
         for k in self.conns.keys():
             for p in self.conns[k].keys():
                 # print("\t\t%s channel - %s filter"%(k, p))
                 self.projs[k][p] = {}
-                exc_src = self.ssamp[k] if p.startswith('dir') \
-                          else self.cam[k]
-                          
+                exc_src = self.cam[k]
                 conn = self.conns[k][p][EXC] 
                 exc = sim.Projection(exc_src, 
                                      self.pops[k][p]['bipolar'],
                                      sim.FromListConnector(conn),
                                      target='excitatory')
                 
-                conn = self.conns[k][p][INH]
-                if (conn is not None) and (len(conn) > 0):
+                
+                if self.conns[k][p][INH]:
                     inh = sim.Projection(self.pops[k]['cam_inter'], 
                                          self.pops[k][p]['bipolar'],
                                          sim.FromListConnector(conn),
@@ -465,10 +403,6 @@ class Retina():
                     inter  = self.extra_conns['inter2']
                     cs_exc = self.extra_conns['cs2'][EXC]
                     cs_inh = self.extra_conns['cs2'][INH]
-                elif p.startswith('dir'):
-                    inter  = self.extra_conns['interSS']
-                    cs_exc = self.extra_conns['csSS'][EXC]
-                    cs_inh = self.extra_conns['csSS'][INH]
                 else:
                     inter  = self.extra_conns['inter']
                     cs_exc = self.extra_conns['cs'][EXC]
@@ -485,6 +419,7 @@ class Retina():
                                      self.pops[k][p]['ganglion'],
                                      sim.FromListConnector(cs_exc),
                                      target='excitatory')
+
                 inh = sim.Projection(self.pops[k][p]['inter'], 
                                      self.pops[k][p]['ganglion'],
                                      sim.FromListConnector(cs_inh),

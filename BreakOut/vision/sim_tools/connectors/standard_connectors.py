@@ -1,4 +1,25 @@
 from ..common import *
+import numbers
+
+def breakout_one2one(width, height, width_bits, weights=2.):
+    from mapping_funcs import row_col_to_input_breakout as src_mapf, \
+                              row_col_to_input_subsamp as dst_mapf
+    
+    dst_width_bits = np.int32(np.ceil(np.log2(width)))
+    conns = []
+    for r in range(height):
+        for c in range(width):
+            src = src_mapf(r, c, True, width_bits)
+            dst = dst_mapf(r, c, True, dst_width_bits)
+            conns.append( (src, dst, weights, 1) )
+
+            src = src_mapf(r, c, False, width_bits)
+            dst = dst_mapf(r, c, False, dst_width_bits)
+            conns.append( (src, dst, weights, 1) )
+            
+    return conns
+
+
 def default_mapping(r, c, ud, w, h):
     return r*w + c
 
@@ -25,10 +46,15 @@ def all2all(num_pre, num_post, weight=2., delay=1., start_idx_pre=0,
     
     end_idx_pre = start_idx_pre + num_pre
     end_idx_post = start_idx_post + num_post
-    
-    conns = [(i, j, weight, delay) for i in range(start_idx_pre, end_idx_pre) \
-                                   for j in range(start_idx_post, end_idx_post)]
-
+    if isinstance(weight, numbers.Number):
+        conns = [(i, j, weight, delay) for i in range(start_idx_pre, end_idx_pre) \
+                                       for j in range(start_idx_post, end_idx_post)]
+    elif isinstance(weight, list) or isinstance(weight, np.ndarray):
+        conns = [(i, j, weight[i*num_post + j], delay) \
+                 for i in range(start_idx_pre, end_idx_pre) \
+                 for j in range(start_idx_post, end_idx_post)]
+    else:
+        raise Exception("in all2all connector, invalid weight type")
     return conns
 
 
