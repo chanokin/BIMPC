@@ -3,19 +3,21 @@ import numbers
 
 def breakout_one2one(width, height, width_bits, weights=2.):
     from mapping_funcs import row_col_to_input_breakout as src_mapf, \
-                              row_col_to_input_subsamp as dst_mapf
+                              row_col_to_repeater as dst_mapf
     
     dst_width_bits = np.int32(np.ceil(np.log2(width)))
     conns = []
+    on_input = True
+    off_input = not on_input
     for r in range(height):
         for c in range(width):
-            src = src_mapf(r, c, True, width_bits)
-            dst = dst_mapf(r, c, True, dst_width_bits)
-            conns.append( (src, dst, weights, 1) )
+            src = src_mapf(r, c, on_input, width_bits)
+            dst = dst_mapf(r, c, on_input, dst_width_bits)
+            conns.append( (src, dst, weights, 1.) )
 
-            src = src_mapf(r, c, False, width_bits)
-            dst = dst_mapf(r, c, False, dst_width_bits)
-            conns.append( (src, dst, weights, 1) )
+            src = src_mapf(r, c, off_input, width_bits)
+            dst = dst_mapf(r, c, off_input, dst_width_bits)
+            conns.append( (src, dst, weights, 1.) )
             
     return conns
 

@@ -65,13 +65,13 @@ visualiser = spinn_breakout.Visualiser(
 # I N T E R M E D I A T E    B U R S T I N G
 ########################################################################
 
-# inter_pop = sim.Population(X_RESOLUTION*Y_RESOLUTION, sim.IZK_curr_exp, 
-                           # burst_params, label='relay')
-# inter_pop.record()
-
-# o2o_bko = sim.FromListConnector( breakout_one2one(X_RESOLUTION, Y_RESOLUTION,
-                                                  # X_BITS, weights=10.) )
-# brk2intr = sim.Projection(breakout_pop, inter_pop, o2o_bko)
+inter_pop = sim.Population(X_RESOLUTION*Y_RESOLUTION, sim.IZK_curr_exp, 
+                           burst_params, label='relay')
+inter_pop.record()
+ 
+o2o_bko = sim.FromListConnector( breakout_one2one(X_RESOLUTION, Y_RESOLUTION,
+                                                  X_BITS, weights=10.) )
+brk2intr = sim.Projection(breakout_pop, inter_pop, o2o_bko)
 
 # ex.activate_live_output_for(inter_pop, host="0.0.0.0", port=UDP_PORT)
 #
@@ -86,7 +86,7 @@ visualiser = spinn_breakout.Visualiser(
 
 # Run simulation (non-blocking)
 # sim.run(None)
-sim.run(5000)
+sim.run(17000)
 
 # Show visualiser (blocking)
 # visualiser.show()

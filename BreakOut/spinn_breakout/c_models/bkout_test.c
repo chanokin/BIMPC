@@ -29,11 +29,11 @@
 #define GAME_HEIGHT (128/RES_DIV)
 
 #define COLOUR_BITS 1
-#define WIDTH_BITS  8
-#define HEIGHT_BITS 8
+#define WIDTH_BITS  6
+#define HEIGHT_BITS 6
 #define HORIZ_SHIFT (HEIGHT_BITS + COLOUR_BITS)
 #define VERT_SHIFT  COLOUR_BITS
-#define PIXELS_PER_WORD 8 //32-bit
+#define PIXELS_PER_WORD 8 //8*[4-bit colour] = 32-bit
 
 
 // Ball outof play time (frames)
@@ -43,7 +43,7 @@
 #define FRAME_DELAY 20
 
 // ball position and velocity scale factor
-#define FACT 1
+#define FACT 2
 
 //----------------------------------------------------------------------------
 // Enumerations
@@ -370,6 +370,7 @@ void timer_callback(uint ticks, uint dummy)
 void mc_packet_received_callback(uint key, uint payload)
 {
   log_debug("Packet received %08x", key);
+  // log_info("Packet received %08x", key);
 
   // Left
   if(key & 0x1)

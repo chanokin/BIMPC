@@ -1,12 +1,12 @@
 from ..common import *
-def default_mapping(r, c, up_or_down, w, h):
-    return r*w + c
-    
+from mapping_funcs import row_col_to_input
+
 def full_kernel_connector(pre_layer_width, pre_layer_height, kernel, 
                           exc_delay=2., inh_delay=1.,
                           col_step=1, row_step=1, 
                           col_start=0, row_start=0, 
-                          map_to_src=default_mapping,
+                          map_to_src=row_col_to_input,
+                          row_bits=8,
                           on_path=True,
                           min_w = 0.001, remove_inh_only=True):
     '''Create connection list based on a convolution kernel, the format
@@ -55,10 +55,8 @@ def full_kernel_connector(pre_layer_width, pre_layer_height, kernel,
                     if np.abs(w) < min_w:
                         continue
                     
-                    if on_path:
-                        src = map_to_src(sr, sc, 1, layer_width, layer_height)
-                    else:
-                        src = map_to_src(sr, sc, 0, layer_width, layer_height)
+                    src = map_to_src(sr, sc, on_path, row_bits)
+
                     # src = sr*layer_width + sc + src_start_idx
                     # divide values so that indices match the size of the
                     # Post (destination) next layer

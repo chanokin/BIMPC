@@ -61,6 +61,7 @@ class Retina():
         
         self.cfg = cfg
         
+        self.mapping_f = cfg['input_mapping_func']
         
         if cfg['gabor']:
             self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
@@ -133,7 +134,7 @@ class Retina():
         cfg = self.cfg
         self.conns = {'off': {}, 'on':{}}
         self.lat_conns = {'off': {}, 'on':{}}
-        row_col_to_input = self.row_col_to_input
+        mapping_f = self.mapping_f
 
         for k in self.conns:
             on_path = (k == 'on')
@@ -141,7 +142,7 @@ class Retina():
                                             self.height, self.cs,
                                             exc_delay=cfg['kernel_exc_delay'],
                                             inh_delay=cfg['kernel_inh_delay'],
-                                            map_to_src=row_col_to_input,
+                                            map_to_src=mapping_f,
                                             on_path=on_path )
 
             self.conns[k]['cs2'] =  conn_krn.full_kernel_connector(self.width,
@@ -152,7 +153,7 @@ class Retina():
                                             row_step=cfg['ctr_srr_half']['step'],
                                             col_start=cfg['ctr_srr_half']['start'], 
                                             row_start=cfg['ctr_srr_half']['start'], 
-                                            map_to_src=row_col_to_input,
+                                            map_to_src=mapping_f,
                                             on_path=on_path)
                                                                   
             self.conns[k]['cs4'] =  conn_krn.full_kernel_connector(self.width,
@@ -163,7 +164,7 @@ class Retina():
                                             row_step=cfg['ctr_srr_quarter']['step'],
                                             col_start=cfg['ctr_srr_quarter']['start'], 
                                             row_start=cfg['ctr_srr_quarter']['start'], 
-                                            map_to_src=row_col_to_input,
+                                            map_to_src=mapping_f,
                                             on_path=on_path)
 
 
@@ -179,7 +180,7 @@ class Retina():
                                                         row_step=cfg['row_step'],
                                                         col_start=cfg['start_col'], 
                                                         row_start=cfg['start_row'], 
-                                                        map_to_src=row_col_to_input,
+                                                        map_to_src=mapping_f,
                                                         on_path=False)
 
                 self.conns['on'][k] = conn_krn.full_kernel_connector(self.width,
@@ -190,20 +191,20 @@ class Retina():
                                                         row_step=cfg['row_step'],
                                                         col_start=cfg['start_col'], 
                                                         row_start=cfg['start_row'], 
-                                                        map_to_src=row_col_to_input,
+                                                        map_to_src=mapping_f,
                                                         on_path=True)
         
         for dk in cfg['direction']['keys']:
             k = "dir: %s"%dk
-            if '2' in dk:
+            if '2' in dk or dk.isupper():
                 conns = dir_conn.direction_connection_angle(dk, 
                                                cfg['direction']['angle'],
                                                cfg['direction']['dist'], 
                                                self.width, self.height, 
-                                               self.row_col_to_input_breakout,
+                                               mapping_f,
                                                cfg['kernel_exc_delay'],
                                                cfg['kernel_inh_delay'],
-                                               dfunc=cfg['direction']['dfunc'], 
+                                               delay_func=cfg['direction']['delay_func'], 
                                                weight=cfg['direction']['weight'])
             else:
                 conns =  dir_conn.direction_connection(dk, \
@@ -211,7 +212,7 @@ class Retina():
                                                 cfg['direction']['div'],
                                                 cfg['direction']['delays'],
                                                 cfg['direction']['weight'],
-                                                self.row_col_to_input_breakout)
+                                                mapping_f)
             
             self.conns['on'][k], self.conns['off'][k] = conns
 
@@ -427,16 +428,15 @@ class Retina():
                 
                 self.projs[k][p]['bip2gang'] = [exc, inh]
 
-    def row_col_to_input(self, row, col, is_on_input, width, height):
-        return mapf.row_col_to_input(row, col, is_on_input, width, 
-                                     height, self.cfg['row_bits'])
-
-    def row_col_to_input_breakout(self, row, col, is_on_input):
-        return mapf.row_col_to_input_breakout(row, col, is_on_input,
-                                              self.cfg['row_bits'])
-
-    def row_col_to_input_subsamp(self, row, col, is_on_input):
-        return mapf.row_col_to_input_subsamp(row, col, is_on_input, 
-                                             self.cfg['row_bits'])
+    # def row_col_to_input(self, row, col, is_on_input, row_bits):
+        # return mapf.row_col_to_input(row, col, is_on_input, self.cfg['row_bits'])
+# 
+    # def row_col_to_input_breakout(self, row, col, is_on_input):
+        # return mapf.row_col_to_input_breakout(row, col, is_on_input,
+                                              # self.cfg['row_bits'])
+# 
+    # def row_col_to_input_subsamp(self, row, col, is_on_input):
+        # return mapf.row_col_to_input_subsamp(row, col, is_on_input, 
+                                             # self.cfg['row_bits'])
     
     
