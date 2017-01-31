@@ -97,6 +97,7 @@ def remove_inh_only_dst(exc_conns, inh_conns, exc_counts):
     return new_exc, new_inh
 
 
+
 def inh_neighbours(r, c, row_step, col_step, kw, kh, correlation,
                    delay=1, selfdelay=4):
     if row_step >= kh or col_step >= kw:

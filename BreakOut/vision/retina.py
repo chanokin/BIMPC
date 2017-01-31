@@ -1,14 +1,15 @@
 from sim_tools.common import *
 from sim_tools.kernels import center_surround as krn_cs, gabor as krn_gbr
 from sim_tools.connectors import kernel_connectors as conn_krn, \
-                                 standard_connectors as conn_std
-from sim_tools.connectors import direction_connectors as dir_conn
-from sim_tools.connectors import mapping_funcs as mapf
+                                 standard_connectors as conn_std, \
+                                 direction_connectors as dir_conn, \
+                                 mapping_funcs as mapf
 
 from scipy.signal import convolve2d, correlate2d
 
 from default_config import defaults_retina as defaults
 
+import sys
 
 
 
@@ -102,9 +103,10 @@ class Retina():
         self.cs = krn_cs.center_surround_kernel(cfg['ctr_srr']['width'],
                                                 cfg['ctr_srr']['std_dev'], 
                                                 cfg['ctr_srr']['sd_mult'])
-        self.cs *= cfg['w2s']*cfg['ctr_srr']['w2s_mult']
         corr['cs'] = correlate2d(self.cs, self.cs, mode='same')
-        
+        corr['cs'] *= cfg['w2s']*cfg['corr_w2s_mult']
+        self.cs *= cfg['w2s']*cfg['ctr_srr']['w2s_mult']
+
         cfg = self.cfg
         self.cs2 = krn_cs.center_surround_kernel(cfg['ctr_srr_half']['width'],
                                                  cfg['ctr_srr_half']['std_dev'], 
@@ -116,7 +118,6 @@ class Retina():
                                                  cfg['ctr_srr_quarter']['std_dev'], 
                                                  cfg['ctr_srr_quarter']['sd_mult'])
         self.cs4 *= cfg['w2s']*cfg['ctr_srr_quarter']['w2s_mult']
-
         
         if cfg['gabor']:
             angles = self.angles
@@ -143,6 +144,7 @@ class Retina():
                                             exc_delay=cfg['kernel_exc_delay'],
                                             inh_delay=cfg['kernel_inh_delay'],
                                             map_to_src=mapping_f,
+                                            row_bits=cfg['row_bits'],
                                             on_path=on_path )
 
             self.conns[k]['cs2'] =  conn_krn.full_kernel_connector(self.width,
@@ -154,6 +156,7 @@ class Retina():
                                             col_start=cfg['ctr_srr_half']['start'], 
                                             row_start=cfg['ctr_srr_half']['start'], 
                                             map_to_src=mapping_f,
+                                            row_bits=cfg['row_bits'],
                                             on_path=on_path)
                                                                   
             self.conns[k]['cs4'] =  conn_krn.full_kernel_connector(self.width,
@@ -165,6 +168,7 @@ class Retina():
                                             col_start=cfg['ctr_srr_quarter']['start'], 
                                             row_start=cfg['ctr_srr_quarter']['start'], 
                                             map_to_src=mapping_f,
+                                            row_bits=cfg['row_bits'],
                                             on_path=on_path)
 
 
@@ -181,6 +185,7 @@ class Retina():
                                                         col_start=cfg['start_col'], 
                                                         row_start=cfg['start_row'], 
                                                         map_to_src=mapping_f,
+                                                        row_bits=cfg['row_bits'],
                                                         on_path=False)
 
                 self.conns['on'][k] = conn_krn.full_kernel_connector(self.width,
@@ -192,6 +197,7 @@ class Retina():
                                                         col_start=cfg['start_col'], 
                                                         row_start=cfg['start_row'], 
                                                         map_to_src=mapping_f,
+                                                        row_bits=cfg['row_bits'],
                                                         on_path=True)
         
         for dk in cfg['direction']['keys']:
@@ -205,7 +211,8 @@ class Retina():
                                                cfg['kernel_exc_delay'],
                                                cfg['kernel_inh_delay'],
                                                delay_func=cfg['direction']['delay_func'], 
-                                               weight=cfg['direction']['weight'])
+                                               weight=cfg['direction']['weight'],
+                                               row_bits=cfg['row_bits'],)
             else:
                 conns =  dir_conn.direction_connection(dk, \
                                                 self.width, self.height,
@@ -250,33 +257,36 @@ class Retina():
                                  delay=cfg['kernel_inh_delay'])
         self.extra_conns['inter4'] = conns
 
-        #bipolar/interneuron to ganglion
+        #bipolar/interneuron to ganglion (use row-major mapping)
         conns = conn_krn.full_kernel_connector(self.filter_width, 
                                                self.filter_height,
                                                self.corr['cs'],
-                                               cfg['kernel_exc_delay']+1,
-                                               cfg['kernel_inh_delay'])
+                                               cfg['kernel_exc_delay'],
+                                               cfg['kernel_inh_delay'],
+                                               map_to_src=mapf.row_major,
+                                               row_bits=self.filter_width)
         self.extra_conns['cs'] = conns
 
         conns = conn_krn.full_kernel_connector(self.filter_width2, 
                                                self.filter_height2,
                                                self.corr['cs'],
-                                               cfg['kernel_exc_delay']+1,
-                                               cfg['kernel_inh_delay'])
+                                               cfg['kernel_exc_delay'],
+                                               cfg['kernel_inh_delay'],
+                                               map_to_src=mapf.row_major,
+                                               row_bits=self.filter_width2)
         self.extra_conns['cs2'] = conns
 
         conns = conn_krn.full_kernel_connector(self.filter_width4, 
                                                self.filter_height4,
                                                self.corr['cs'],
-                                               cfg['kernel_exc_delay']+1,
-                                               cfg['kernel_inh_delay'])
+                                               cfg['kernel_exc_delay'],
+                                               cfg['kernel_inh_delay'],
+                                               map_to_src=mapf.row_major,
+                                               row_bits=self.filter_width4)
         self.extra_conns['cs4'] = conns
         
 
 
-                                            
-
-    
     def build_populations(self):
         self.pops = {}
         sim = self.sim

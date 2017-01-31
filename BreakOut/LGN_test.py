@@ -14,6 +14,7 @@ from vision.spike_tools.vis import my_imshow, plot_spikes,                      
 # from vision.sim_tools.vis import plot_connector_3d
 # import vision.sim_tools.kernels.center_surround as csgen
 # import vision.sim_tools.kernels.gabor as gabgen
+import vision.sim_tools.connectors.mapping_funcs as mapfun
 
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
@@ -27,14 +28,22 @@ from pyNN import spiNNaker as sim
 
 print(sim.__name__)
 
+on_imgs = []
+off_imgs = []
 
 # In[2]:
+def get_spikes(pop):
+    return pop.getSpikes(compatible_output=True)
 
 def output_to_spike_source_array(spikes, num_neurons):
     ssa = [[] for i in range(num_neurons)]
-    
+    max_i = -1
     for (nrn_id, spk_t) in spikes:
+        if max_i < nrn_id:
+            max_i = int(nrn_id)
+            
         ssa[int(nrn_id)].append(spk_t)
+    # print(max_i)
     
     for i in range(num_neurons):
         ssa[i][:] = sorted(ssa[i])
@@ -88,34 +97,36 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
     
     up = None if len(off_spikes) == 0 else 1
 
-    on_imgs = imgs_in_T_from_spike_array(on_spikes, img_w, img_h, 
+    on_imgs[:] = imgs_in_T_from_spike_array(on_spikes, img_w, img_h, 
                                          0, end_t_ms, ftime_ms, 
                                          out_array=True, thresh=thresh, 
                                          up_down=up)
     if len(off_spikes) > 0:
-        off_imgs = imgs_in_T_from_spike_array(off_spikes, img_w, img_h, 
+        off_imgs[:] = imgs_in_T_from_spike_array(off_spikes, img_w, img_h, 
                                               0, end_t_ms, ftime_ms, 
                                               out_array=True, thresh=thresh,
                                               up_down=0)
     else:
-        off_imgs = [i for i in on_imgs]
+        off_imgs[:] = [i for i in on_imgs]
     
     num_imgs = len(on_imgs)
-    cols = 10
-    rows = num_imgs//cols + 1
-    figw = 1
-    fig = plt.figure(figsize=(figw*cols, figw*rows))
+    # cols = 10
+    # rows = num_imgs//cols + 1
+    # figw = 1
+    # fig = plt.figure(figsize=(figw*cols, figw*rows))
     for i in range(num_imgs):
 
         off_imgs[i][:,:,1] = on_imgs[i][:,:,1]
-        
-        ax = plt.subplot(rows, cols, i+1)
-        my_imshow(ax, off_imgs[i], cmap=None)
+        # 
+        # ax = plt.subplot(rows, cols, i+1)
+        # my_imshow(ax, off_imgs[i], cmap=None)
     # plot_spikes(spikes)
-    plt.suptitle(title)
-    plt.show()
+    # plt.suptitle(title)
+    # plt.show()
     
-    return build_gif(off_imgs, "%s.gif"%title, show_gif=True, title=title, interval=30)
+    build_gif(off_imgs, "%s.gif"%title, show_gif=True, title=title, interval=30)
+    plt.close()
+    return
 
 
 # In[3]:
@@ -159,9 +170,10 @@ cam, dmy_ssa_cam, dmy_prj_cam = setup_cam_pop(sim, spk_sa,
 print(cam.size)
 cam.record()
 
-burst_params = {'a': 0.02, 'b': 0.25, 'c': -55.0, 'd': 0.05, 
-                'v_init': -64., 'u_init': -0.25*55}
-
+burst_params  = {'a': 0.02, 'b': 0.25, 'c': -55.0, 'd': 0.05, 
+                 'v_init': -64., 'u_init': -64*0.25}
+class2_params = {'a': 0.2, 'b': 0.26, 'c': -65.0, 'd': 0.0, 
+                 'v_init': -64., 'u_init': -64*0.26}
 relay = sim.Population(img_w*img_h*2, sim.IZK_curr_exp, 
                        burst_params, label='relay')
 relay.record()
@@ -170,7 +182,6 @@ sim.Projection(cam, relay, sim.OneToOneConnector(weights=10))
 cfg = {'record': {'voltages': False, 
                   'spikes': True,
                  },
-#        'w2s': w2s,
        'gabor': False,
        'row_bits': 5,
       }
@@ -185,11 +196,11 @@ print("Start run for %s ms"%run_time)
 sim.run(run_time)
 
 cam_spks = {}
-cam_spks['on'] = retina.cam['on'].getSpikes(compatible_output=True)
-cam_spks['off'] = retina.cam['off'].getSpikes(compatible_output=True)
+cam_spks['on'] = get_spikes(retina.cam['on'])
+cam_spks['off'] = get_spikes(retina.cam['off'])
 inter_cam_spks = {}
-inter_cam_spks['on'] = retina.pops['on']['cam_inter'].getSpikes(compatible_output=True)
-inter_cam_spks['off'] = retina.pops['off']['cam_inter'].getSpikes(compatible_output=True)
+inter_cam_spks['on'] = get_spikes(retina.pops['on']['cam_inter'])
+inter_cam_spks['off'] = get_spikes(retina.pops['off']['cam_inter'])
 
 
 print("Trying to get output spikes")
@@ -204,7 +215,7 @@ for k in retina.pops.keys():
                 
                 key = "%s__%s__%s"%(k, p, t)
                 try:
-                    out_spks[k][p][t] = retina.pops[k][p][t].getSpikes(                                                    compatible_output=True)
+                    out_spks[k][p][t] = get_spikes(retina.pops[k][p][t])
                 except:
                     print("no spikes for retina - population %s"%(key))
 
@@ -217,7 +228,7 @@ if do_lgn:
         for k in lgn.pops[c].keys():
             print("\t\t%s %s"%(c,k))
             try:
-                lgn_spks[c][k] = lgn.pops[c][k]['output'].getSpikes(                                                            compatible_output=True)
+                lgn_spks[c][k] = get_spikes(lgn.pops[c][k]['output'])
             except:
                 print("no spikes for lgn - population %s"%(k))
 
@@ -239,24 +250,52 @@ print("-------------------------------------------------------------------")
 
 
 plt.figure()
-plot_output_spikes(cam_spks['off'], color='red', markersize=10, 
-                   marker='x', markeredgewidth=1, markeredgecolor='red')
-plot_output_spikes(cam_spks['on'], color='green', markersize=10, 
-                   marker='+', markeredgewidth=1, markeredgecolor='green')
-
+plot_output_spikes(cam_spks['off'], color='red', markersize=3, 
+                   marker='_', markeredgewidth=1, markeredgecolor='red')
+plot_output_spikes(cam_spks['on'], color='green', markersize=3, 
+                   marker='|', markeredgewidth=1, markeredgecolor='green')
 plt.suptitle("CAMERA SPIKES")
-plt.show()
+plt.savefig("camera_spikes.png", dpi=150)
+plt.draw()
+plt.close()
 
+#########################
+# def mf(nid, width, height):
+    # row, col, up_dn = 0, 0, 0
+    # row   = (nid >> 1) & 63
+    # col   = (nid >> 7) & 63
+    # up_dn = nid & 1
+    # 
+    # #print(row, col, up_dn)
+    # #col = width  - 1 if col >= width  else col
+    # #row = height - 1 if row >= height else row
+    # return row, col, up_dn
+# 
+# plt.figure()
+# on_imgs[:] = imgs_in_T_from_spike_array(cam_spks['on'], img_w, img_h, 
+                                        # 0, on_time_ms, ftime_ms, 
+                                        # out_array=True, thresh=thresh, 
+                                        # map_func=mf)
+# num_imgs = len(on_imgs)
+# cols = 10
+# rows = num_imgs//cols + 1
+# figw = 1
+# fig = plt.figure(figsize=(figw*cols, figw*rows))
+# for i in range(num_imgs):
+    # ax = plt.subplot(rows, cols, i+1)
+    # my_imshow(ax, on_imgs[i], cmap=None)
+# plt.show()
+#########################
 
 plt.figure()
-
-plot_output_spikes(inter_cam_spks['off'], color='red', markersize=10, 
-                   marker='x', markeredgewidth=1, markeredgecolor='red')
-plot_output_spikes(inter_cam_spks['on'], color='green', markersize=10, 
-                   marker='+', markeredgewidth=1, markeredgecolor='green')
-
+plot_output_spikes(inter_cam_spks['off'], color='red', markersize=3, 
+                   marker='_', markeredgewidth=1, markeredgecolor='red')
+plot_output_spikes(inter_cam_spks['on'], color='green', markersize=3, 
+                   marker='|', markeredgewidth=1, markeredgecolor='green')
 plt.suptitle("INTER CAMERA SPIKES")
-plt.show()
+plt.savefig("inter_camera_spikes.png", dpi=150)
+plt.draw()
+plt.close()
 
 
 for p in sorted(out_spks['on'].keys()):
@@ -264,6 +303,8 @@ for p in sorted(out_spks['on'].keys()):
 
         if t != 'ganglion':
             continue
+        # if t != 'bipolar':
+            # continue
             
 #         if p == 'cs' or p == 'cs2' or p == 'cs4':
 #             krn = retina.cs
@@ -293,16 +334,18 @@ for p in sorted(out_spks['on'].keys()):
         plot_output_spikes(out_spks['on'][p][t], color='g')
         plot_output_spikes(out_spks['off'][p][t], color='r')
         plt.suptitle("%s, %s"%(p, t))
-        plt.show()
-        
-#         plot_out_spikes(out_spks['on'][p][t], 
-#                         out_spks['off'][p][t], 
-#                         w, h, 
-#                         on_time_ms, ftime_ms, 
-#                         thresh=thresh, 
-#                         title="retina %s, %s"%(p, t))
-        
-        
+        plt.draw()
+        plt.savefig("retina_%s_%s_spikes.png"%(p, t), dpi=150)
+
+        plt.close()
+        plot_out_spikes(out_spks['on'][p][t], 
+                        out_spks['off'][p][t], 
+                        w, h, 
+                        on_time_ms, ftime_ms, 
+                        thresh=thresh, 
+                        title="retina %s, %s"%(p, t))
+        # plt.show()
+        plt.close()
         
         
 
@@ -328,17 +371,20 @@ if do_lgn:
         
         plot_output_spikes(lgn_spks['on'][k], color='g')
         plot_output_spikes(lgn_spks['off'][k], color='r')
-        plt.suptitle("%s, %s"%(p, t))
-#         plt.show()
+        plt.suptitle("LGN %s"%(k))
+        plt.draw()
+        plt.savefig("lgn_%s_%s_spikes.png"%(p, t), dpi=150)
         
-#         plot_out_spikes(lgn_spks['on'][k],
-#                         lgn_spks['off'][k],
-#                         w, h, 
-#                         on_time_ms, ftime_ms, 
-#                         thresh=thresh, 
-#                         title="LGN %s"%(k))
-    #     plt.show()
-
+        plt.close()
+        
+        plot_out_spikes(lgn_spks['on'][k],
+                        lgn_spks['off'][k],
+                        w, h, 
+                        on_time_ms, ftime_ms, 
+                        thresh=thresh, 
+                        title="LGN %s"%(k))
+        # plt.show()
+        plt.close()
 
 # In[ ]:
 

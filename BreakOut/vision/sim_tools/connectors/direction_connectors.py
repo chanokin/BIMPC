@@ -13,7 +13,8 @@ def unique_rows(a):
 def direction_connection_angle(direction, max_angle, max_dist, 
                                width, height, mapfunc,
                                exc_delay, inh_delay,
-                               delay_func=lambda x: x, weight=2.):
+                               delay_func=lambda x: x, weight=2.,
+                               row_bits=8):
     # print("direction_connection_angle")
     dcah = direction_connection_angle_helper
     exc_conns_on  = []
@@ -52,7 +53,8 @@ def direction_connection_angle(direction, max_angle, max_dist,
             exc[:], inh[:] = dcah(dang, max_angle, max_dist, x, y, 
                                   width, height, mapfunc, on_chan, 
                                   exc_delay, inh_delay,
-                                  delay_func=delay_func, weight=weight)  
+                                  delay_func=delay_func, weight=weight,
+                                  row_bits=row_bits)  
             if exc:
                 exc_conns_on += exc
                 inh_conns_on += inh
@@ -61,7 +63,8 @@ def direction_connection_angle(direction, max_angle, max_dist,
             exc[:], inh[:] = dcah(dang, max_angle, max_dist, x, y, 
                                   width, height, mapfunc, on_chan,
                                   exc_delay, inh_delay, 
-                                  delay_func=delay_func, weight=weight)  
+                                  delay_func=delay_func, weight=weight,
+                                  row_bits=row_bits)  
             if exc:
                 exc_conns_off += exc
                 inh_conns_off += inh
@@ -75,7 +78,8 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
                                       mapfunc, is_on_channel,
                                       exc_delay, inh_delay,
                                       delay_func=lambda x: x, weight=2.,
-                                      inh_width_mult=6.
+                                      inh_width_mult=6.,
+                                      row_bits=8,
                                      ):
     deg2rad = np.pi/180.
 
@@ -102,14 +106,15 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
 
             if new_c:
                 xe, ye = start_x + xd, start_y + yd
-                src = mapfunc(ye, xe, chan)
+                src = mapfunc(ye, xe, chan, row_bits)
+                
                 if 0 <= xe < width and 0 <= ye < height:
                     e.append( (src, dst, weight, delay+exc_delay) )
                 
                 xd = int(np.round( d*np.cos((a+dang+180)*deg2rad) ))
                 yd = int(np.round( d*np.sin((a+dang+180)*deg2rad) ))
                 xi, yi = start_x + xd, start_y + yd
-                src = mapfunc(yi, xi, chan)
+                src = mapfunc(yi, xi, chan, row_bits)
                 
                 if 0 <= xi < width and 0 <= yi < height:
                     i.append( (src, dst, -weight*inh_width_mult, inh_delay) )

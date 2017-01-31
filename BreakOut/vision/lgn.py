@@ -1,7 +1,8 @@
 from sim_tools.common import *
 from sim_tools.kernels import center_surround as krn_cs, gabor as krn_gbr
 from sim_tools.connectors import kernel_connectors as conn_krn, \
-                                 standard_connectors as conn_std
+                                 standard_connectors as conn_std, \
+                                 mapping_funcs as mapf
 from scipy.signal import convolve2d, correlate2d
 
 from default_config import defaults_lgn as defaults
@@ -21,8 +22,8 @@ class LGN():
         self.retina  = retina
         self.channels = ['on', 'off']
         
-        self.width   = retina.width
-        self.height  = retina.height
+        self.width   = retina.filter_width
+        self.height  = retina.filter_height
         self.size    = retina.filter_size
 
         self.width2  = retina.filter_width2
@@ -76,7 +77,9 @@ class LGN():
                                                   cfg['col_step'], 
                                                   cfg['row_step'],
                                                   cfg['start_col'], 
-                                                  cfg['start_row'])
+                                                  cfg['start_row'],
+                                                  map_to_src=mapf.row_major,
+                                                  row_bits=self.width)
         
         tmp, inh[:] = conn_krn.full_kernel_connector(self.width,
                                                      self.height,
@@ -87,6 +90,8 @@ class LGN():
                                                      cfg['row_step'],
                                                      cfg['start_col'], 
                                                      cfg['start_row'],
+                                                     map_to_src=mapf.row_major,
+                                                     row_bits=self.width,
                                                      remove_inh_only=False)
 
         conns['split'] = [exc, inh]
@@ -99,7 +104,9 @@ class LGN():
                                                   cfg['col_step'], 
                                                   cfg['row_step'],
                                                   cfg['start_col'], 
-                                                  cfg['start_row'])
+                                                  cfg['start_row'],
+                                                  map_to_src=mapf.row_major,
+                                                  row_bits=self.width2)
         
         tmp[:], inh[:] = conn_krn.full_kernel_connector(self.width2,
                                                         self.height2,
@@ -110,6 +117,8 @@ class LGN():
                                                         cfg['row_step'],
                                                         cfg['start_col'], 
                                                         cfg['start_row'],
+                                                        map_to_src=mapf.row_major,
+                                                        row_bits=self.width2,
                                                         remove_inh_only=False)
         conns['split2'] = [exc, inh]
         
@@ -121,7 +130,9 @@ class LGN():
                                                   cfg['col_step'], 
                                                   cfg['row_step'],
                                                   cfg['start_col'], 
-                                                  cfg['start_row'])
+                                                  cfg['start_row'],
+                                                  map_to_src=mapf.row_major,
+                                                  row_bits=self.width4)
         
         tmp[:], inh[:] = conn_krn.full_kernel_connector(self.width4,
                                                         self.height4,
@@ -132,6 +143,8 @@ class LGN():
                                                         cfg['row_step'],
                                                         cfg['start_col'], 
                                                         cfg['start_row'],
+                                                        map_to_src=mapf.row_major,
+                                                        row_bits=self.width4,
                                                         remove_inh_only=False)
         conns['split4'] = [exc, inh]
 
@@ -191,8 +204,8 @@ class LGN():
                 # print("src size: %d"%self.retina.pops['off'][k]['ganglion'].size) 
                 # print("dst size: %d"%self.pops[k]['inter'].size)
                 projs[c][k]['inter'] = sim.Projection(self.retina.pops[c][k]['ganglion'],
-                                                   self.pops[c][k]['inter'], o2o,
-                                                   target='excitatory')
+                                                      self.pops[c][k]['inter'], o2o,
+                                                      target='excitatory')
 
                 if k == 'cs4':
                     split = self.conns['split4']

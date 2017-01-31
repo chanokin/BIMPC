@@ -457,7 +457,7 @@ def imgs_in_T_from_spike_array(spike_array, img_width, img_height,
     num_neurons = img_width*img_height
     if out_array: # should be output spike format
         mult = 2 if up_down is None else 1
-        print("imgs_in_T, num neurons: ", mult*num_neurons)
+        print("imgs_in_T, num neurons: %d"%(mult*num_neurons))
         spike_array = out_to_spike_array(spike_array, mult*num_neurons)
 
 
@@ -581,7 +581,7 @@ def build_gif(imgs, filename='', show_gif=True, save_gif=True, title='',
         im_ani.save(filename, writer='imagemagick')
 
     if show_gif:
-        pylab.show()
+        pylab.draw()
 
     return
 
