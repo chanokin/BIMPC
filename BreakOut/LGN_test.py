@@ -22,6 +22,7 @@ from vision.retina import Retina, dvs_modes, MERGED
 from vision.lgn import LGN
 from vision.spike_tools.pattern import pattern_generator as pat_gen
 import pickle
+import cv2
 
 # from pyNN import nest as sim
 from pyNN import spiNNaker as sim
@@ -108,7 +109,14 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
                                               up_down=0)
     else:
         off_imgs[:] = [i for i in on_imgs]
-    
+    fps = 15.
+    mspf = int(1000./fps)
+    fourcc = cv2.VideoWriter_fourcc(*'mp4v')
+    title = title.replace(' ', '_')
+    title = title.replace(':', '--_')
+    scl = 20
+    vid_shape = (img_w*scl, img_h*scl)
+    vid_out = cv2.VideoWriter("%s.m4v"%title, fourcc, fps, vid_shape)
     num_imgs = len(on_imgs)
     # cols = 10
     # rows = num_imgs//cols + 1
@@ -117,15 +125,21 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
     for i in range(num_imgs):
 
         off_imgs[i][:,:,1] = on_imgs[i][:,:,1]
-        # 
+        vid_out.write( cv2.resize(cv2.cvtColor(off_imgs[i], cv2.COLOR_BGR2RGB), vid_shape, 
+                                  interpolation=cv2.INTER_LINEAR) )
         # ax = plt.subplot(rows, cols, i+1)
         # my_imshow(ax, off_imgs[i], cmap=None)
-    # plot_spikes(spikes)
+
     # plt.suptitle(title)
-    # plt.show()
+    # plt.draw()
+    # plt.savefig("frames_for_%s.png"%title, dpi=150)
+    # plt.close()
     
-    build_gif(off_imgs, "%s.gif"%title, show_gif=True, title=title, interval=30)
-    plt.close()
+    # build_gif(off_imgs, "%s.gif"%title, show_gif=True, title=title, interval=mspf)
+    # plt.close()
+    
+    vid_out.release()
+    
     return
 
 
@@ -329,22 +343,23 @@ for p in sorted(out_spks['on'].keys()):
             
 
         
-        fig = plt.figure()#figsize=(16, 18))
+        # fig = plt.figure()#figsize=(16, 18))
+        # 
+        # plot_output_spikes(out_spks['on'][p][t], color='g')
+        # plot_output_spikes(out_spks['off'][p][t], color='r')
+        # plt.suptitle("%s, %s"%(p, t))
+        # plt.draw()
+        # plt.savefig("retina_%s_%s_spikes.png"%(p, t), dpi=150)
+# 
+        # plt.close()
         
-        plot_output_spikes(out_spks['on'][p][t], color='g')
-        plot_output_spikes(out_spks['off'][p][t], color='r')
-        plt.suptitle("%s, %s"%(p, t))
-        plt.draw()
-        plt.savefig("retina_%s_%s_spikes.png"%(p, t), dpi=150)
-
-        plt.close()
         plot_out_spikes(out_spks['on'][p][t], 
                         out_spks['off'][p][t], 
                         w, h, 
                         on_time_ms, ftime_ms, 
                         thresh=thresh, 
-                        title="retina %s, %s"%(p, t))
-        # plt.show()
+                        title="retina_%s_%s"%(p, t))
+        # 
         plt.close()
         
         
@@ -367,23 +382,21 @@ if do_lgn:
             w = img_w
             h = img_h
         
-        fig = plt.figure()#figsize=(16, 18))
-        
-        plot_output_spikes(lgn_spks['on'][k], color='g')
-        plot_output_spikes(lgn_spks['off'][k], color='r')
-        plt.suptitle("LGN %s"%(k))
-        plt.draw()
-        plt.savefig("lgn_%s_%s_spikes.png"%(p, t), dpi=150)
-        
-        plt.close()
+        # fig = plt.figure()#figsize=(16, 18))
+        # 
+        # plot_output_spikes(lgn_spks['on'][k], color='g')
+        # plot_output_spikes(lgn_spks['off'][k], color='r')
+        # plt.suptitle("LGN %s"%(k))
+        # plt.draw()
+        # plt.savefig("lgn_%s_spikes.png"%(k), dpi=150)
+        # plt.close()
         
         plot_out_spikes(lgn_spks['on'][k],
                         lgn_spks['off'][k],
                         w, h, 
                         on_time_ms, ftime_ms, 
                         thresh=thresh, 
-                        title="LGN %s"%(k))
-        # plt.show()
+                        title="LGN_%s"%(k))
         plt.close()
 
 # In[ ]:

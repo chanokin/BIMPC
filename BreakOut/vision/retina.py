@@ -53,6 +53,7 @@ class Retina():
                               cfg['ctr_srr_quarter']['step'])
         self.filter_size4   = self.filter_width4*self.filter_height4
         
+        self.channels = ['on', 'off']
 
         self.cam = {'on':  camera_pop if dvs_mode==dvs_modes[0] else camera_pop[ON],
                     'off': camera_pop if dvs_mode==dvs_modes[0] else camera_pop[OFF],
@@ -133,8 +134,8 @@ class Retina():
 
     def build_connectors(self):
         cfg = self.cfg
-        self.conns = {'off': {}, 'on':{}}
-        self.lat_conns = {'off': {}, 'on':{}}
+        self.conns = {ch: {} for ch in self.channels}
+        self.lat_conns = {ch: {} for ch in self.channels}
         mapping_f = self.mapping_f
 
         for k in self.conns:

@@ -13,7 +13,8 @@ def unique_rows(a):
 def direction_connection_angle(direction, max_angle, max_dist, 
                                width, height, mapfunc,
                                exc_delay, inh_delay,
-                               delay_func=lambda x: x, weight=2.,
+                               delay_func=lambda x: x, 
+                               weight_func=lambda x: x, weight=2.,
                                row_bits=8):
     # print("direction_connection_angle")
     dcah = direction_connection_angle_helper
@@ -25,7 +26,7 @@ def direction_connection_angle(direction, max_angle, max_dist,
     inh = []
     # sys.stdout.write("\t\tPercent %03d"%0)
     dang = 0
-    if   direction == 'right2left' or direction == 'E':
+    if   direction == 'left2right' or direction == 'E':
         dang = 0
     elif direction == 'bl2tr'      or direction == 'NE':
         dang = 45
@@ -33,13 +34,13 @@ def direction_connection_angle(direction, max_angle, max_dist,
         dang = 90
     elif direction == 'br2tl'      or direction == 'NW':
         dang = 135
-    elif direction == 'left2right' or direction == 'W':
+    elif direction == 'right2left' or direction == 'W':
         dang = 180
-    elif direction == 'tl2br'      or direction == 'SW':
+    elif direction == 'tr2bl'      or direction == 'SW':
         dang = 225
     elif direction == 'top2bottom' or direction == 'S':
         dang = 270
-    elif direction == 'tr2bl'      or direction == 'SE':
+    elif direction == 'tl2br'      or direction == 'SE':
         dang = 315
     else:
         raise Exception("Not a valid direction - %s -"%(direction))

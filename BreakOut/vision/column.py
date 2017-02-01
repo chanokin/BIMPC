@@ -16,8 +16,14 @@ class V1MultiColumn():
         self.learn_on = learning_on
         
         self.lgn = lgn
-        self.in_width  = in_width
-        self.in_height = in_height
+        self.retina = lgn.retina
+        self.width   = lgn.width 
+        self.width2  = lgn.width2
+        self.width4  = lgn.width4
+        self.height  = lgn.height
+        self.height2 = lgn.height2
+        self.height4 = lgn.height4
+
         self.in_location = in_location
         self.in_receptive_width = in_receptive_width
         self.group_size = group_size
@@ -46,21 +52,54 @@ class V1MultiColumn():
     def update_weights(self, new_weights):
         pass
         
+    def get_map_params(self, k):
+        if k == 'cs4':
+            kk = 'ctr_srr_quarter'
+            width     = self.retina.filter_width4
+            height    = self.retina.filter_height4
+        elif k == 'cs2':
+            kk = 'ctr_srr_half'
+            width     = self.retina.filter_width2
+            height    = self.retina.filter_height2
+        else:
+            kk = 'ctr_srr'
+            width     = self.retina.filter_width
+            height    = self.retina.filter_height
+            
+        step      = self.retina.cfg[kk]['step']
+        start     = self.retina.cfg[kk]['start']
+        krn_width = self.retina.cfg[kk]['width']        
         
-    def build_input_indices(self):
-        indices = []
-        hlf_in_w = self.in_receptive_width//2
-        fr_r = max(0, self.in_location[ROW] - hlf_in_w)
+        return step, start, width, height, krn_width
+    
+    def get_row_col_limits(self, step, start, width, height, half_krn_width):
+        #location is in highest resolution scale (i.e. 'ctr_srr')
+        
+        fr_r = max(0, self.in_location[ROW] - half_krn_width)
         to_r = min(self.in_height, self.in_location[ROW] + hlf_in_w + 1)
         fr_c = max(0, self.in_location[COL] - hlf_in_w)
         to_c = min(self.in_width,  self.in_location[COL] + hlf_in_w + 1)
         
-        for r in range(fr_r, to_r):
-            for c in range(fr_c, to_c):
-                indices.append( int(r*self.in_width + c) )
+        return fr_r, to_r, fr_c, to_c
+
+    def build_input_indices_weights(self):
+        indices = {k: [] for k in self.lgn.output_keys()}
+        weights = {k: [] for k in self.lgn.output_keys()}
+        step    = 1
+        start   = 0
+        width   = 1
+        height  = 1
+        
+        for k in indices:
+            step, start, width, height, krn_width = self.get_map_params(k)
+            hlf_krn_w = 
+            
+            for r in range(fr_r, to_r):
+                for c in range(fr_c, to_c):
+                    indices.append( int(r*self.in_width + c) )
         
         self.in_indices = indices
-    
+        self.in_weights = weights
         
     
     def build_connectors(self):

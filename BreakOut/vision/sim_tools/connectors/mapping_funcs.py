@@ -31,6 +31,7 @@ def row_col_to_input_breakout(row, col, is_on_input, row_bits):
     
     return idx
 
+
 def row_major(row, col, is_on_input, x_res):
     return row_col_to_input_subsamp(row, col, is_on_input, x_res)
 

@@ -20,7 +20,7 @@ class LGN():
         self.cfg     = cfg
         self.sim     = simulator
         self.retina  = retina
-        self.channels = ['on', 'off']
+        self.channels = retina.channels
         
         self.width   = retina.filter_width
         self.height  = retina.filter_height
@@ -51,6 +51,9 @@ class LGN():
         print("\t\tdone!")
 
 
+    def output_keys(self):
+        return self.pops[self.channels[0]].keys()
+        
     def build_kernels(self):
         cfg = self.cfg
         self.cs = krn_cs.center_surround_kernel(cfg['kernel_width'],

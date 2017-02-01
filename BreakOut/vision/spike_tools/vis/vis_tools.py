@@ -464,7 +464,7 @@ def imgs_in_T_from_spike_array(spike_array, img_width, img_height,
     
     spikes = [ sorted(spk_ts) for spk_ts in spike_array ]
         
-    imgs = [ np.zeros((img_height, img_width, 3)) \
+    imgs = [ np.zeros((img_height, img_width, 3), dtype=np.uint8) \
              for t in range(from_t, to_t, t_step) ]
     
     nrn_start_idx = [ 0 for t in range(len(spikes)) ]
@@ -479,14 +479,15 @@ def imgs_in_T_from_spike_array(spike_array, img_width, img_height,
             if len(spikes[nrn_id]) == 0:
                 continue
                 
-            nrn_id = np.uint16(nrn_id)
+            nrn_id = np.uint32(nrn_id)
             row, col, up_dn = map_func(nrn_id, img_width, img_height)
             if up_down is not None:
                 up_dn = up_down
                 
             for spk_t in spikes[nrn_id][nrn_start_idx[nrn_id]:]:
                 if t <= spk_t < t+t_step:
-                    imgs[t_idx][row, col, up_dn] += thresh
+                    # imgs[t_idx][row, col, up_dn] += thresh
+                    imgs[t_idx][row, col, up_dn] = 255
                 else:
                     break
                 nrn_start_idx[nrn_id] += 1

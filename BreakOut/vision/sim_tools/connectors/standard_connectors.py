@@ -1,6 +1,10 @@
 from ..common import *
 import numbers
 
+def default_mapping(r, c, ud, w, h):
+    return r*w + c
+
+
 def breakout_one2one(width, height, width_bits, weights=2.):
     from mapping_funcs import row_col_to_input_breakout as src_mapf, \
                               row_col_to_repeater as dst_mapf
@@ -21,9 +25,6 @@ def breakout_one2one(width, height, width_bits, weights=2.):
             
     return conns
 
-
-def default_mapping(r, c, ud, w, h):
-    return r*w + c
 
 def subsample(in_width, in_height, width_sub, height_sub, is_up, 
               weight=2., delay=1., coord_mapping=default_mapping):
@@ -131,3 +132,4 @@ def list_wta_interneuron(pop, inter, ff_weight=2., fb_weight=-2., delay=1.):
 
     
     return conn_ff, conn_fb
+

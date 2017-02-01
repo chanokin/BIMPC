@@ -28,6 +28,19 @@ inh_cell_params = { 'cm': 0.3,  # nF
                     'v_thresh': -58.
                   }
 
+wta_inh_cell = "IF_curr_exp",
+wta_inh_cell_params = { 'cm': 0.3,  # nF
+                        'i_offset': 0.0,
+                        'tau_m': 4.0,
+                        'tau_refrac': 1.0,
+                        'tau_syn_E': 2.,
+                        'tau_syn_I': 16.,
+                        'v_reset': -70.0,
+                        'v_rest': -65.0,
+                        'v_thresh': -55.4
+                       }
+
+
 g_w2s = 2.
 inh_w2s = 2.
 dir_w2s = 2. #0.5
@@ -76,7 +89,7 @@ defaults_retina = {
                                  'delays': [1, 4, 6, 8],#, 3, 4 ],
                                  'subsamp': 1,#2,
                                  'w2s': ssamp_w2s,
-                                 'angle': 6,
+                                 'angle': 5,
                                  'dist': 3,
                                  'delay_func': lambda dist: dir_delay*(dist-1) + 1, 
                                                # 20ms = 1000/framerate
@@ -107,3 +120,48 @@ defaults_lgn = {'kernel_width': 3,
                         },
                 'lat_inh': False,
             }
+
+
+defaults_v1 = { 'kernel_width': 3,
+                'kernel_exc_delay': 2.,
+                'kernel_inh_delay': 1.,
+                'gabor': {'num_divs': 7., 'freq': 5., 'std_dev': 1.1},
+                'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7} ,
+                'w2s': 1.7,
+                'pix_in_weight': 0.001,
+                'context_in_weight': 0.3,
+                'context_to_context_weight': 0.5, 
+                'context_to_simple_weight': 1., 
+                'max_delay': 14.,
+                'max_weight': 1.7,
+                'wta_inh_cell': { 'cell': wta_inh_cell,
+                                  'params': wta_inh_cell_params,
+                                }, 
+                'inh_cell': {'cell': inh_cell,
+                             'params': inh_cell_params,
+                            }, 
+                'exc_cell': {'cell': exc_cell,
+                             'params': exc_cell_params,
+                            },
+                'record': {'voltages': False, 
+                           'spikes': False,
+                          },
+                'lat_inh': False,
+                'stdp': {'tau_plus': 15,
+                         'tau_minus': 20,
+                         'w_max': 0.25,
+                         'w_min': 0.,
+                         'a_plus': 0.01,
+                         'a_minus': 0.02,
+                        },
+                'readout_w': 0.5,
+                'num_input_wta': 25,
+                'num_liquid': 500,
+                'num_output': 25,
+                'in_to_liquid_exc_probability': 0.8,
+                'in_to_liquid_inh_probability': 0.5,
+                
+               }
+
+
+
