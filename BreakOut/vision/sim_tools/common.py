@@ -71,3 +71,8 @@ def conv2one(mat):
 def sum2zero(mat):
   return mat - np.mean(mat)
 
+def seed_rand(seed=None):
+    # if seed is None:
+        # time.sleep(0.001)
+        # seed = np.uint32(time.time()*(10*15))
+    np.random.seed(seed)

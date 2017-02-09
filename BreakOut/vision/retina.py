@@ -65,7 +65,7 @@ class Retina():
         
         self.mapping_f = cfg['input_mapping_func']
         
-        if cfg['gabor']:
+        if 'gabor' in cfg and cfg['gabor']:
             self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
             self.angles = [i*self.ang_div for i in range(cfg['gabor']['num_divs'])]
         
@@ -120,7 +120,7 @@ class Retina():
                                                  cfg['ctr_srr_quarter']['sd_mult'])
         self.cs4 *= cfg['w2s']*cfg['ctr_srr_quarter']['w2s_mult']
         
-        if cfg['gabor']:
+        if 'gabor' in cfg and cfg['gabor']:
             angles = self.angles
             gab = krn_gbr.multi_gabor(cfg['gabor']['width'], 
                                       angles, 
@@ -173,7 +173,7 @@ class Retina():
                                             on_path=on_path)
 
 
-        if cfg['gabor']:
+        if 'gabor' in cfg and cfg['gabor']:
             for k in self.gab.keys():
                 krn = self.gab[k]
                 
@@ -221,7 +221,7 @@ class Retina():
                                                 cfg['direction']['delays'],
                                                 cfg['direction']['weight'],
                                                 mapping_f)
-            
+            # print(conns)
             self.conns['on'][k], self.conns['off'][k] = conns
 
 ######################################

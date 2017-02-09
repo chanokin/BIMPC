@@ -89,18 +89,24 @@ def wta_interneuron(num_neurons, ff_weight=2., fb_weight=-2., delay=1.,
 
 
 
-
+ 
 ######### given neuron id lists do connections
 
-def list_all2all(pre, post, weight=2., delay=1., sd=None):
+def list_all2all(pre, post, weight=2., delay=1., sd=None, in_weight_scaling=None):
+    height = len(pre)
+    width = len(post)
+    ws = np.ones(height) if in_weight_scaling is None else in_weight_scaling
     scale = 0.5*weight if sd is None else sd
-    np.random.seed(np.uint32( time.time()*(10**6) ))
-    nw = len(pre)*len(post)
-    weights = np.random.normal(loc=weight, scale=scale, size=nw)
+    weights = np.zeros((height, width))
+    for i in range(height):
+        seed_rand() #from sim_tools
+        weights[i, :] = np.random.random(size=width)*weight
+    # weights = np.random.normal(loc=weight, scale=scale, size=(height, width))
     weights = np.abs(weights)
-    conns = [(pre[i], post[j], weights[i*len(post) + j], delay) \
-                                       for j in range(len(post)) \
-                                       for i in range(len(pre)) ]
+    # print(weights)
+    conns = [(pre[r], post[c], weights[r,c]*ws[r], delay)  \
+                                    for c in range(width)  \
+                                    for r in range(height) ]
 
     return conns
 

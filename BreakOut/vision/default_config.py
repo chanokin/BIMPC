@@ -1,6 +1,6 @@
 from sim_tools.connectors.mapping_funcs import row_col_to_input, \
                                                row_col_to_input_breakout
-
+import numpy as np
 frame_rate = 50
 dir_delay = int(1000./frame_rate)
 
@@ -22,29 +22,30 @@ inh_cell_params = { 'cm': 0.3,  # nF
                     'tau_m': 10.0,
                     'tau_refrac': 1.0,
                     'tau_syn_E': 2.,
-                    'tau_syn_I': 6.,
+                    'tau_syn_I': 1.,
                     'v_reset': -70.0,
                     'v_rest': -65.0,
                     'v_thresh': -58.
                   }
 
-wta_inh_cell = "IF_curr_exp",
+wta_inh_cell = "IF_curr_exp"
 wta_inh_cell_params = { 'cm': 0.3,  # nF
                         'i_offset': 0.0,
                         'tau_m': 4.0,
-                        'tau_refrac': 1.0,
-                        'tau_syn_E': 2.,
-                        'tau_syn_I': 16.,
+                        'tau_refrac': 2.0,
+                        'tau_syn_E': 4.,
+                        'tau_syn_I': 1.,
                         'v_reset': -70.0,
                         'v_rest': -65.0,
-                        'v_thresh': -55.4
+                        'v_thresh': -58.
                        }
 
 
 g_w2s = 2.
 inh_w2s = 2.
-dir_w2s = 2. #0.5
+dir_w2s = 1.431 #0.5
 ssamp_w2s = 3.
+w2s_e = 1.
 
 defaults_retina = {
                    'kernel_width': 3,
@@ -54,18 +55,17 @@ defaults_retina = {
                    'corr_w2s_mult': 2.,
                    'row_step': 1, 'col_step': 1,
                    'start_row': 0, 'start_col': 0,
-                  #  'gabor': {'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 3},
-                   'gabor': False,
+                   # 'gabor': {'num_divs': 2., 'freq': 5., 'std_dev': 5., 'width': 3},
+                   # 'gabor': {'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 3},
                    
                    'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7, 'width': 3, 
                                'step': 1, 'start':0, 'w2s_mult':1.},
                    'ctr_srr_half': {'std_dev': 1.8664, 'sd_mult': 6.7, 'width': 7,
-                                    'step': 3, 'start':0, 'w2s_mult': 4.},
-                   'ctr_srr_quarter': {'std_dev': 4., 'sd_mult': 6.7, 
-                                       'width': 15,
+                                    'step': 3, 'start':0, 'w2s_mult': 5.},
+                   'ctr_srr_quarter': {'std_dev': 4., 'sd_mult': 6.7, 'width': 15,
                                        'step': 6, 'start': 0, 'w2s_mult': 6.},
                     #retina receives 1 spike per change, needs huge weights
-                   'w2s': g_w2s*1.5, 
+                   'w2s': g_w2s*1.1, 
                    'inhw': inh_w2s,
                    'inh_cell': {'cell': inh_cell,
                                'params': inh_cell_params,
@@ -77,9 +77,9 @@ defaults_retina = {
                               'spikes': False,
                              },
                    'direction': {'keys': [
-                                          'E', 'W',
-                                          'N', 'S',
-                                          'NW', 'SW', 'NE', 'SE',
+                                          'E',# 'W',
+                                          'N',# 'S',
+                                          # 'NW', 'SW', 'NE', 'SE',
                                           # 'east', 'south', 'west', 'north',
                                           # 'south east', 'south west', 
                                           # 'north east', 'north west'
@@ -89,9 +89,9 @@ defaults_retina = {
                                  'delays': [1, 4, 6, 8],#, 3, 4 ],
                                  'subsamp': 1,#2,
                                  'w2s': ssamp_w2s,
-                                 'angle': 5,
+                                 'angle': 8,
                                  'dist': 3,
-                                 'delay_func': lambda dist: dir_delay*(dist-1) + 1, 
+                                 'delay_func': lambda dist: dir_delay*(dist-1), 
                                                # 20ms = 1000/framerate
                                  
                                 },
@@ -101,6 +101,10 @@ defaults_retina = {
                   }
 
 
+#######################################################################
+####################         L G N          ###########################
+#######################################################################
+
 defaults_lgn = {'kernel_width': 3,
                 'kernel_exc_delay': 2.,
                 'kernel_inh_delay': 1.,
@@ -108,7 +112,7 @@ defaults_lgn = {'kernel_width': 3,
                 'start_row': 0, 'start_col': 0,
                 'gabor': {'num_divs': 7., 'freq': 5., 'std_dev': 1.1},
                 'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7} ,
-                'w2s': g_w2s*1.,
+                'w2s': g_w2s*1.5,
                 'inh_cell': {'cell': inh_cell,
                              'params': inh_cell_params
                             }, 
@@ -122,13 +126,12 @@ defaults_lgn = {'kernel_width': 3,
             }
 
 
-defaults_v1 = { 'kernel_width': 3,
-                'kernel_exc_delay': 2.,
-                'kernel_inh_delay': 1.,
-                'gabor': {'num_divs': 7., 'freq': 5., 'std_dev': 1.1},
-                'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7} ,
-                'w2s': 1.7,
-                'pix_in_weight': 0.001,
+
+#######################################################################
+####################           V 1          ###########################
+#######################################################################
+
+defaults_v1 = { 'w2s': g_w2s,
                 'context_in_weight': 0.3,
                 'context_to_context_weight': 0.5, 
                 'context_to_simple_weight': 1., 
@@ -147,20 +150,27 @@ defaults_v1 = { 'kernel_width': 3,
                            'spikes': False,
                           },
                 'lat_inh': False,
-                'stdp': {'tau_plus': 15,
+                'stdp': {'tau_plus': 20,
                          'tau_minus': 20,
                          'w_max': 0.25,
                          'w_min': 0.,
-                         'a_plus': 0.01,
-                         'a_minus': 0.02,
+                         'a_plus': 0.1,
+                         'a_minus': 0.12,
                         },
+                'in_receptive_width': 5,
+                'in_receptive_step':  10,
+                'in_receptive_start': 3,
+                'min_scale_weight': 0.00001,
+                'pix_in_weight': g_w2s*0.2,
                 'readout_w': 0.5,
-                'num_input_wta': 25,
+                'num_input_wta': 15,
                 'num_liquid': 500,
                 'num_output': 25,
                 'in_to_liquid_exc_probability': 0.8,
                 'in_to_liquid_inh_probability': 0.5,
-                
+                'col_weight_func': lambda dist: w2s_e*np.exp(-dist),
+                'build_liquid': False,
+                'build_readout': False,
                }
 
 

@@ -56,7 +56,7 @@ def direction_connection_angle(direction, max_angle, max_dist,
                                   exc_delay, inh_delay,
                                   delay_func=delay_func, weight=weight,
                                   row_bits=row_bits)  
-            if exc:
+            if exc and inh:
                 exc_conns_on += exc
                 inh_conns_on += inh
                 
@@ -66,7 +66,7 @@ def direction_connection_angle(direction, max_angle, max_dist,
                                   exc_delay, inh_delay, 
                                   delay_func=delay_func, weight=weight,
                                   row_bits=row_bits)  
-            if exc:
+            if exc and inh:
                 exc_conns_off += exc
                 inh_conns_off += inh
     # print(" - Done!")
@@ -77,9 +77,9 @@ def direction_connection_angle(direction, max_angle, max_dist,
 def direction_connection_angle_helper(dang, max_angle, max_dist, 
                                       start_x, start_y, width, height,
                                       mapfunc, is_on_channel,
-                                      exc_delay, inh_delay,
+                                      exc_delay=2, inh_delay=1,
                                       delay_func=lambda x: x, weight=2.,
-                                      inh_width_mult=6.,
+                                      inh_width_mult=1.,
                                       row_bits=8,
                                      ):
     deg2rad = np.pi/180.
@@ -93,8 +93,8 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
         for d in range(1, max_dist+1):
             new_c = True
             
-            xd = int(np.round( d*np.cos((a+dang)*deg2rad) ))
-            yd = int(np.round( d*np.sin((a+dang)*deg2rad) ))
+            xd = int(np.round( d*np.cos((a+dang+180)*deg2rad) ))
+            yd = int(np.round( d*np.sin((a+dang+180)*deg2rad) ))
 
             delay = delay_func( np.abs(xd) + np.abs(yd) )
             
@@ -110,15 +110,17 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
                 src = mapfunc(ye, xe, chan, row_bits)
                 
                 if 0 <= xe < width and 0 <= ye < height:
-                    e.append( (src, dst, weight, delay+exc_delay) )
+                    e.append( (src, dst, weight, exc_delay+delay) )
                 
-                xd = int(np.round( d*np.cos((a+dang+180)*deg2rad) ))
-                yd = int(np.round( d*np.sin((a+dang+180)*deg2rad) ))
+                xd = int(np.round( d*np.cos((a+dang)*deg2rad) ))
+                yd = int(np.round( d*np.sin((a+dang)*deg2rad) ))
                 xi, yi = start_x + xd, start_y + yd
                 src = mapfunc(yi, xi, chan, row_bits)
                 
                 if 0 <= xi < width and 0 <= yi < height:
+                    # i.append( (src, dst, -weight*inh_width_mult, inh_delay) )
                     i.append( (src, dst, -weight*inh_width_mult, inh_delay) )
+                    
             
 
     # return [unique_rows(e), unique_rows(i)]
