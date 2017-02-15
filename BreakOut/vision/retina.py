@@ -37,21 +37,37 @@ class Retina():
             self.on_idx = 0
             self.off_idx = 0
         
-        self.filter_width  = ((width  - cfg['start_col'])//cfg['col_step'])
-        self.filter_height = ((height - cfg['start_row'])//cfg['row_step']) 
+        self.shapes = {}
+        ### // <- integer div
+        self.css = ['cs', 'cs2', 'cs4']
+        self.filter_width  = ((width  - cfg['cs']['start'])//cfg['cs']['step'])
+        self.filter_height = ((height - cfg['cs']['start'])//cfg['cs']['step']) 
         self.filter_size   = self.filter_width*self.filter_height
-
-        self.filter_width2  = ((width  - cfg['ctr_srr_half']['start'])//\
-                              cfg['ctr_srr_half']['step'])
-        self.filter_height2 = ((height - cfg['ctr_srr_half']['start'])//\
-                              cfg['ctr_srr_half']['step'])
+        self.shapes['cs'] = {'width': self.filter_width, 'height': self.filter_height,
+                             'size':  self.filter_size,  'step':   cfg['cs']['step'],
+                             'start': cfg['cs']['start']}
+                             
+        
+        self.filter_width2  = ((width  - cfg['cs_half']['start'])//cfg['cs_half']['step'])
+        self.filter_height2 = ((height - cfg['cs_half']['start'])//cfg['cs_half']['step'])
         self.filter_size2   = self.filter_width2*self.filter_height2
+        self.shapes['cs2'] = {'width': self.filter_width, 'height': self.filter_height,
+                              'size':  self.filter_size,  'step':   cfg['cs_half']['step'],
+                              'start': cfg['cs_half']['start']}
 
-        self.filter_width4  = ((width  - cfg['ctr_srr_quarter']['start'])//\
-                              cfg['ctr_srr_quarter']['step'])
-        self.filter_height4 = ((height - cfg['ctr_srr_quarter']['start'])//\
-                              cfg['ctr_srr_quarter']['step'])
+        self.filter_width4  = ((width  - cfg['cs_quart']['start'])//cfg['cs_quart']['step'])
+        self.filter_height4 = ((height - cfg['cs_quart']['start'])//cfg['cs_quart']['step'])
         self.filter_size4   = self.filter_width4*self.filter_height4
+        self.shapes['cs4'] = {'width': self.filter_width, 'height': self.filter_height,
+                              'size':  self.filter_size,  'step':   cfg['cs_quart']['step'],
+                              'start': cfg['cs_quart']['start']}
+        
+        if 'direction' in cfg:
+            w = (width - cfg['direction']['start'])//cfg['direction']['step']
+            h = (height - cfg['direction']['start'])//cfg['direction']['step']
+            self.shapes['dir'] = {'width': w, 'height': h, 'size': w*h, 
+                                  'step':  cfg['direction']['step'],
+                                  'start': cfg['direction']['start']}
         
         self.channels = ['on', 'off']
 
@@ -66,6 +82,12 @@ class Retina():
         self.mapping_f = cfg['input_mapping_func']
         
         if 'gabor' in cfg and cfg['gabor']:
+            w = (width - cfg['gabor']['start'])//cfg['gabor']['step']
+            h = (height - cfg['gabor']['start'])//cfg['gabor']['step']
+            self.shapes['gabor'] = {'width': w, 'height': h,
+                                    'size': w*h, 'step': cfg['gabor']['step'],
+                                    'start': cfg['gabor']['start']}
+                                
             self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
             self.angles = [i*self.ang_div for i in range(cfg['gabor']['num_divs'])]
         
@@ -98,27 +120,31 @@ class Retina():
     def build_kernels(self):
         def a2k(a):
             return 'gabor_%d'%( int( a ) )
-        
+        krns = {}
         corr = {}
         cfg = self.cfg
-        self.cs = krn_cs.center_surround_kernel(cfg['ctr_srr']['width'],
-                                                cfg['ctr_srr']['std_dev'], 
-                                                cfg['ctr_srr']['sd_mult'])
+        self.cs = krn_cs.center_surround_kernel(cfg['cs']['width'],
+                                                cfg['cs']['std_dev'], 
+                                                cfg['cs']['sd_mult'])
         corr['cs'] = correlate2d(self.cs, self.cs, mode='same')
         corr['cs'] *= cfg['w2s']*cfg['corr_w2s_mult']
-        self.cs *= cfg['w2s']*cfg['ctr_srr']['w2s_mult']
-
+        self.cs *= cfg['w2s']*cfg['cs']['w2s_mult']
+        krns['cs'] = self.cs
+        
         cfg = self.cfg
-        self.cs2 = krn_cs.center_surround_kernel(cfg['ctr_srr_half']['width'],
-                                                 cfg['ctr_srr_half']['std_dev'], 
-                                                 cfg['ctr_srr_half']['sd_mult'])
-        self.cs2 *= cfg['w2s']*cfg['ctr_srr_half']['w2s_mult']
-
+        self.cs2 = krn_cs.center_surround_kernel(cfg['cs_half']['width'],
+                                                 cfg['cs_half']['std_dev'], 
+                                                 cfg['cs_half']['sd_mult'])
+        self.cs2 *= cfg['w2s']*cfg['cs_half']['w2s_mult']
+        krns['cs2'] = self.cs2
+        
         cfg = self.cfg
-        self.cs4 = krn_cs.center_surround_kernel(cfg['ctr_srr_quarter']['width'],
-                                                 cfg['ctr_srr_quarter']['std_dev'], 
-                                                 cfg['ctr_srr_quarter']['sd_mult'])
-        self.cs4 *= cfg['w2s']*cfg['ctr_srr_quarter']['w2s_mult']
+        self.cs4 = krn_cs.center_surround_kernel(cfg['cs_quart']['width'],
+                                                 cfg['cs_quart']['std_dev'], 
+                                                 cfg['cs_quart']['sd_mult'])
+        self.cs4 *= cfg['w2s']*cfg['cs_quart']['w2s_mult']
+        krns['cs4'] = self.cs4
+        
         
         if 'gabor' in cfg and cfg['gabor']:
             angles = self.angles
@@ -127,9 +153,11 @@ class Retina():
                                       cfg['gabor']['std_dev'], 
                                       cfg['gabor']['freq'])
             self.gab = {a2k(k): gab[k]*cfg['w2s'] for k in gab.keys()}
+            
             # for k in self.gab:
             #     self.corr[k] = convolve2d(self.gab[k], self.gab[k], mode='same')
 
+        self.kernels = krns
         self.corr = corr
 
     def build_connectors(self):
@@ -137,92 +165,70 @@ class Retina():
         self.conns = {ch: {} for ch in self.channels}
         self.lat_conns = {ch: {} for ch in self.channels}
         mapping_f = self.mapping_f
-
-        for k in self.conns:
-            on_path = (k == 'on')
-            self.conns[k]['cs'] = conn_krn.full_kernel_connector( self.width,
-                                            self.height, self.cs,
-                                            exc_delay=cfg['kernel_exc_delay'],
-                                            inh_delay=cfg['kernel_inh_delay'],
-                                            map_to_src=mapping_f,
-                                            row_bits=cfg['row_bits'],
-                                            on_path=on_path )
-
-            self.conns[k]['cs2'] =  conn_krn.full_kernel_connector(self.width,
-                                            self.height, self.cs2,
-                                            cfg['kernel_exc_delay'],
-                                            cfg['kernel_inh_delay'],
-                                            col_step=cfg['ctr_srr_half']['step'], 
-                                            row_step=cfg['ctr_srr_half']['step'],
-                                            col_start=cfg['ctr_srr_half']['start'], 
-                                            row_start=cfg['ctr_srr_half']['start'], 
-                                            map_to_src=mapping_f,
-                                            row_bits=cfg['row_bits'],
-                                            on_path=on_path)
-                                                                  
-            self.conns[k]['cs4'] =  conn_krn.full_kernel_connector(self.width,
-                                            self.height, self.cs4,
-                                            cfg['kernel_exc_delay'],
-                                            cfg['kernel_inh_delay'],
-                                            col_step=cfg['ctr_srr_quarter']['step'], 
-                                            row_step=cfg['ctr_srr_quarter']['step'],
-                                            col_start=cfg['ctr_srr_quarter']['start'], 
-                                            row_start=cfg['ctr_srr_quarter']['start'], 
-                                            map_to_src=mapping_f,
-                                            row_bits=cfg['row_bits'],
-                                            on_path=on_path)
-
+        css = self.css
+        krn_conn = conn_krn.full_kernel_connector
+        for c in self.conns:
+            for k in css:
+                on_path = (k == 'on')
+                self.conns[c][k] = krn_conn( self.width,
+                                             self.height, 
+                                             self.kernels[k],
+                                             exc_delay=cfg['kernel_exc_delay'],
+                                             inh_delay=cfg['kernel_inh_delay'],
+                                             col_step=self.shapes[k]['step'], 
+                                             row_step=self.shapes[k]['step'],
+                                             col_start=self.shapes[k]['start'], 
+                                             row_start=self.shapes[k]['start'], 
+                                             map_to_src=mapping_f,
+                                             row_bits=cfg['row_bits'],
+                                             on_path=on_path )
 
         if 'gabor' in cfg and cfg['gabor']:
-            for k in self.gab.keys():
-                krn = self.gab[k]
-                
-                self.conns['off'][k] = conn_krn.full_kernel_connector(self.width,
-                                                        self.height, krn,
-                                                        cfg['kernel_exc_delay'],
-                                                        cfg['kernel_inh_delay'],
-                                                        col_step=cfg['col_step'], 
-                                                        row_step=cfg['row_step'],
-                                                        col_start=cfg['start_col'], 
-                                                        row_start=cfg['start_row'], 
-                                                        map_to_src=mapping_f,
-                                                        row_bits=cfg['row_bits'],
-                                                        on_path=False)
+            for c in self.conns:
+                for k in self.gab.keys():
+                    krn = self.gab[k]
+                    on_path = (k == 'on')
+                    self.conns[c][k] = krn_conn(self.width,
+                                                self.height, 
+                                                krn,
+                                                cfg['kernel_exc_delay'],
+                                                cfg['kernel_inh_delay'],
+                                                col_step=self.shapes['gabor']['step'], 
+                                                row_step=self.shapes['gabor']['step'],
+                                                col_start=self.shapes['gabor']['start'], 
+                                                row_start=self.shapes['gabor']['start'], 
+                                                map_to_src=mapping_f,
+                                                row_bits=cfg['row_bits'],
+                                                on_path=on_path)
 
-                self.conns['on'][k] = conn_krn.full_kernel_connector(self.width,
-                                                        self.height, krn,
-                                                        cfg['kernel_exc_delay'],
-                                                        cfg['kernel_inh_delay'],
-                                                        col_step=cfg['col_step'], 
-                                                        row_step=cfg['row_step'],
-                                                        col_start=cfg['start_col'], 
-                                                        row_start=cfg['start_row'], 
-                                                        map_to_src=mapping_f,
-                                                        row_bits=cfg['row_bits'],
-                                                        on_path=True)
         
-        for dk in cfg['direction']['keys']:
-            k = "dir: %s"%dk
-            if '2' in dk or dk.isupper():
-                conns = dir_conn.direction_connection_angle(dk, 
-                                               cfg['direction']['angle'],
-                                               cfg['direction']['dist'], 
-                                               self.width, self.height, 
-                                               mapping_f,
-                                               cfg['kernel_exc_delay'],
-                                               cfg['kernel_inh_delay'],
-                                               delay_func=cfg['direction']['delay_func'], 
-                                               weight=cfg['direction']['weight'],
-                                               row_bits=cfg['row_bits'],)
-            else:
-                conns =  dir_conn.direction_connection(dk, \
-                                                self.width, self.height,
-                                                cfg['direction']['div'],
-                                                cfg['direction']['delays'],
-                                                cfg['direction']['weight'],
-                                                mapping_f)
-            # print(conns)
-            self.conns['on'][k], self.conns['off'][k] = conns
+        if 'direction' in cfg:
+            for dk in cfg['direction']['keys']:
+                k = "%s_dir"%dk
+                if '2' in dk or dk.isupper():
+                    dir_cn = dir_conn.direction_connection_angle
+                    conns = dir_cn(dk, 
+                                   cfg['direction']['angle'],
+                                   cfg['direction']['dist'], 
+                                   self.width, self.height, 
+                                   mapping_f,
+                                   start=self.shapes['dir']['start'], 
+                                   step=self.shapes['dir']['step'],
+                                   exc_delay=cfg['kernel_exc_delay'],
+                                   inh_delay=cfg['kernel_inh_delay'],
+                                   delay_func=cfg['direction']['delay_func'], 
+                                   weight=cfg['direction']['weight'],
+                                   row_bits=cfg['row_bits'],)
+                else:
+                    dir_cn = dir_conn.direction_connection
+                    conns = dir_cn(dk, \
+                                   self.width, self.height,
+                                   cfg['direction']['div'],
+                                   cfg['direction']['delays'],
+                                   cfg['direction']['weight'],
+                                   mapping_f)
+                # print(conns)
+                self.conns['on'][k], self.conns['off'][k] = conns
 
 ######################################
 
@@ -243,48 +249,57 @@ class Retina():
         self.extra_conns['o2o'] = conns
         
         #bipolar to interneuron 
-        conns = conn_std.one2one(self.filter_size,
-                                 weight=cfg['inhw'], 
-                                 delay=cfg['kernel_inh_delay'])
-        self.extra_conns['inter'] = conns
+        self.extra_conns['inter'] = {}
+        for k in css:
+            
+            conns = conn_std.one2one(self.shapes[k]['size'],
+                                     weight=cfg['inhw'], 
+                                     delay=cfg['kernel_inh_delay'])
+            self.extra_conns['inter'][k] = conns
         
-        conns = conn_std.one2one(self.filter_size2,
-                                 weight=cfg['inhw'], 
-                                 delay=cfg['kernel_inh_delay'])
-        self.extra_conns['inter2'] = conns
+        if 'gabor' in cfg:
+            conns = conn_std.one2one(self.shapes['gabor']['size'],
+                                     weight=cfg['inhw'], 
+                                     delay=cfg['kernel_inh_delay'])
+            self.extra_conns['inter']['gabor'] = conns
         
-        conns = conn_std.one2one(self.filter_size4,
-                                 weight=cfg['inhw'], 
-                                 delay=cfg['kernel_inh_delay'])
-        self.extra_conns['inter4'] = conns
-
+        if 'direction' in cfg:
+            conns = conn_std.one2one(self.shapes['dir']['size'],
+                                     weight=cfg['inhw'], 
+                                     delay=cfg['kernel_inh_delay'])
+            self.extra_conns['inter']['dir'] = conns
+        
         #bipolar/interneuron to ganglion (use row-major mapping)
-        conns = conn_krn.full_kernel_connector(self.filter_width, 
-                                               self.filter_height,
-                                               self.corr['cs'],
-                                               cfg['kernel_exc_delay'],
-                                               cfg['kernel_inh_delay'],
-                                               map_to_src=mapf.row_major,
-                                               row_bits=self.filter_width)
-        self.extra_conns['cs'] = conns
+        self.extra_conns['ganglion'] = {}
+        for k in css:
+            conns = conn_krn.full_kernel_connector(self.shapes[k]['width'], 
+                                                   self.shapes[k]['height'],
+                                                   self.corr['cs'],
+                                                   cfg['kernel_exc_delay'],
+                                                   cfg['kernel_inh_delay'],
+                                                   map_to_src=mapf.row_major,
+                                                   row_bits=self.shapes[k]['width'])
+            self.extra_conns['ganglion'][k] = conns
 
-        conns = conn_krn.full_kernel_connector(self.filter_width2, 
-                                               self.filter_height2,
-                                               self.corr['cs'],
-                                               cfg['kernel_exc_delay'],
-                                               cfg['kernel_inh_delay'],
-                                               map_to_src=mapf.row_major,
-                                               row_bits=self.filter_width2)
-        self.extra_conns['cs2'] = conns
-
-        conns = conn_krn.full_kernel_connector(self.filter_width4, 
-                                               self.filter_height4,
-                                               self.corr['cs'],
-                                               cfg['kernel_exc_delay'],
-                                               cfg['kernel_inh_delay'],
-                                               map_to_src=mapf.row_major,
-                                               row_bits=self.filter_width4)
-        self.extra_conns['cs4'] = conns
+        if 'gabor' in cfg:
+            conns = conn_krn.full_kernel_connector(self.shapes['gabor']['width'], 
+                                                   self.shapes['gabor']['height'],
+                                                   self.corr['cs'],
+                                                   cfg['kernel_exc_delay'],
+                                                   cfg['kernel_inh_delay'],
+                                                   map_to_src=mapf.row_major,
+                                                   row_bits=self.shapes['gabor']['width'])
+            self.extra_conns['ganglion']['gabor'] = conns
+        
+        if 'direction' in cfg:
+            conns = conn_krn.full_kernel_connector(self.shapes['dir']['width'], 
+                                                   self.shapes['dir']['height'],
+                                                   self.corr['cs'],
+                                                   cfg['kernel_exc_delay'],
+                                                   cfg['kernel_inh_delay'],
+                                                   map_to_src=mapf.row_major,
+                                                   row_bits=self.shapes['dir']['width'])
+            self.extra_conns['ganglion']['dir'] = conns
         
 
 
@@ -325,13 +340,15 @@ class Retina():
 
         for k in self.conns.keys():
             for p in self.conns[k].keys():
-                if p == 'cs4':
-                    filter_size = self.filter_size4
-                elif p == 'cs2':
-                    filter_size = self.filter_size2
+                if 'cs' in p:
+                    filter_size = self.shapes[p]['size']
+                elif 'gabor' in p:
+                    filter_size = self.shapes['gabor']['size']
+                elif 'dir' in p:
+                    filter_size = self.shapes['dir']['size']
                 else:
-                    filter_size = self.filter_size
-                
+                    raise Exception("In Retina-build_populations: can't find population size")
+
                 self.pops[k][p] = {'bipolar': sim.Population(filter_size,
                                                              exc_cell, exc_parm,
                                                              label='Retina: bipolar_%s_%s'%(k, p)),
@@ -407,18 +424,18 @@ class Retina():
                 else:
                     self.projs[k][p]['cam2bip'] = [exc]
                     
-                if p == 'cs4':
-                    inter  = self.extra_conns['inter4']
-                    cs_exc = self.extra_conns['cs4'][EXC]
-                    cs_inh = self.extra_conns['cs4'][INH]
-                elif p == 'cs2':
-                    inter  = self.extra_conns['inter2']
-                    cs_exc = self.extra_conns['cs2'][EXC]
-                    cs_inh = self.extra_conns['cs2'][INH]
-                else:
-                    inter  = self.extra_conns['inter']
-                    cs_exc = self.extra_conns['cs'][EXC]
-                    cs_inh = self.extra_conns['cs'][INH]
+                if 'cs' in p:
+                    inter  = self.extra_conns['inter'][p]
+                    cs_exc = self.extra_conns['ganglion'][p][EXC]
+                    cs_inh = self.extra_conns['ganglion'][p][INH]
+                elif 'gabor' in p:
+                    inter  = self.extra_conns['inter']['gabor']
+                    cs_exc = self.extra_conns['ganglion']['gabor'][EXC]
+                    cs_inh = self.extra_conns['ganglion']['gabor'][INH]
+                elif 'dir' in p:
+                    inter  = self.extra_conns['inter']['dir']
+                    cs_exc = self.extra_conns['ganglion']['dir'][EXC]
+                    cs_inh = self.extra_conns['ganglion']['dir'][INH]
                     
                 exc = sim.Projection(self.pops[k][p]['bipolar'], 
                                      self.pops[k][p]['inter'],

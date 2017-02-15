@@ -74,7 +74,8 @@ def wta(num_neurons, weight=-2., delay=1., start_idx=0):
     end_idx = start_idx + num_neurons
     conns = [(i, j, weight, delay) for i in range(start_idx, end_idx) \
                                    for j in range(start_idx, end_idx) if i != j]
-    
+    conns += [(i, i, weight, delay+1) for i in range(start_idx, end_idx)]
+
     return conns
 
 

@@ -5,7 +5,7 @@ frame_rate = 50
 dir_delay = int(1000./frame_rate)
 
 exc_cell = "IF_curr_exp"
-exc_cell_params = { 'cm': 0.3,  # nF
+exc_cell_params = { 'cm': 0.35,  # nF
                     'i_offset': 0.0,
                     'tau_m': 10.0,
                     'tau_refrac': 2.0,
@@ -17,7 +17,7 @@ exc_cell_params = { 'cm': 0.3,  # nF
                   }
 
 inh_cell = "IF_curr_exp"
-inh_cell_params = { 'cm': 0.3,  # nF
+inh_cell_params = { 'cm': 0.35,  # nF
                     'i_offset': 0.0,
                     'tau_m': 10.0,
                     'tau_refrac': 1.0,
@@ -43,7 +43,7 @@ wta_inh_cell_params = { 'cm': 0.3,  # nF
 
 g_w2s = 2.
 inh_w2s = 2.
-dir_w2s = 1.431 #0.5
+dir_w2s = 1.9 #0.5
 ssamp_w2s = 3.
 w2s_e = 1.
 
@@ -55,14 +55,14 @@ defaults_retina = {
                    'corr_w2s_mult': 2.,
                    'row_step': 1, 'col_step': 1,
                    'start_row': 0, 'start_col': 0,
-                   # 'gabor': {'num_divs': 2., 'freq': 5., 'std_dev': 5., 'width': 3},
-                   # 'gabor': {'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 3},
-                   
-                   'ctr_srr': {'std_dev': 0.8, 'sd_mult': 6.7, 'width': 3, 
+                   # 'gabor': {'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 7,
+                             # 'step': 3, 'start': 0},
+
+                   'cs': {'std_dev': 0.8, 'sd_mult': 6.7, 'width': 3, 
                                'step': 1, 'start':0, 'w2s_mult':1.},
-                   'ctr_srr_half': {'std_dev': 1.8664, 'sd_mult': 6.7, 'width': 7,
+                   'cs_half': {'std_dev': 1.8664, 'sd_mult': 6.7, 'width': 7,
                                     'step': 3, 'start':0, 'w2s_mult': 5.},
-                   'ctr_srr_quarter': {'std_dev': 4., 'sd_mult': 6.7, 'width': 15,
+                   'cs_quart': {'std_dev': 4., 'sd_mult': 6.7, 'width': 15,
                                        'step': 6, 'start': 0, 'w2s_mult': 6.},
                     #retina receives 1 spike per change, needs huge weights
                    'w2s': g_w2s*1.1, 
@@ -76,9 +76,10 @@ defaults_retina = {
                    'record': {'voltages': False, 
                               'spikes': False,
                              },
+                             
                    'direction': {'keys': [
-                                          'E',# 'W',
-                                          'N',# 'S',
+                                          'E', 'W',
+                                          # 'N', 'S',
                                           # 'NW', 'SW', 'NE', 'SE',
                                           # 'east', 'south', 'west', 'north',
                                           # 'south east', 'south west', 
@@ -89,12 +90,15 @@ defaults_retina = {
                                  'delays': [1, 4, 6, 8],#, 3, 4 ],
                                  'subsamp': 1,#2,
                                  'w2s': ssamp_w2s,
-                                 'angle': 8,
-                                 'dist': 3,
-                                 'delay_func': lambda dist: dir_delay*(dist-1), 
+                                 'angle': 7,
+                                 'dist': 4,
+                                 'delay_func': lambda dist: dir_delay*dist, 
                                                # 20ms = 1000/framerate
+                                 'step': 1,
+                                 'start': 0,
                                  
                                 },
+                                
                   # 'input_mapping_func': row_col_to_input_breakout,
                   'input_mapping_func': row_col_to_input,
                   'row_bits': 6,
@@ -131,7 +135,39 @@ defaults_lgn = {'kernel_width': 3,
 ####################           V 1          ###########################
 #######################################################################
 
+#from A Statistical Analysis of Information-Processing Properties of 
+#Lamina-SpecificCortical Microcircuit Models
+column_conn = {'l2': {'inh': 0.2, 'exc': 0.8,
+                      'exc2inh': 0.21, 'inh2exc': 0.16,
+                      'exc2exc': 0.26, 'inh2inh': 0.25,
+                      'exc2l5e': 0.55, 'inh2l5e': 0.20,
+                      'exc2l4i': 0.8,
+                     },
+               'l4': {'inh': 0.2, 'exc': 0.8,
+                      'exc2inh': 0.19, 'inh2exc': 0.10,
+                      'exc2exc': 0.17, 'inh2inh': 0.50,
+                      'exc2l2e': 0.28, 'inh2l2e': 0.50,
+                     },
+               'l5': {'inh': 0.2, 'exc': 0.8,
+                      'exc2inh': 0.10, 'inh2exc': 0.12,
+                      'exc2exc': 0.09, 'inh2inh': 0.60,
+                      'exc2l2e': 0.03,
+                     },
+              }
+input_conn = {'main':  {'l2e': 0.20,
+                        'l4e': 0.80, 'l4i': 0.50,
+                        'l5e': 0.10,
+                       },
+              'extra': {'l2e': 0.20,
+                       }
+             }
+neurons_in_column = {'l2': 10,
+                     'l4': 100,
+                     'l6': 40}
 defaults_v1 = { 'w2s': g_w2s,
+                'column_conn': column_conn,
+                'input_conn': input_conn,
+                'neurons_in_column': neurons_in_column,
                 'context_in_weight': 0.3,
                 'context_to_context_weight': 0.5, 
                 'context_to_simple_weight': 1., 

@@ -24,7 +24,12 @@ if sim.__name__ == 'pyNN.spiNNaker':
 fig_path = './wta_figs'
 # In[2]:
 
-
+def remove_rand(patt, num_remove, num_neurons, seed):
+    np.random.seed(seed)
+    rand_del = np.random.choice(range(num_in), size=num_del, replace=False)
+    for i in rand_del:
+        patt[i][:] = []
+        
 def set_in_pop(sim, single_patt, num_neurons, w2s=2.):
 #     print("Setting-up Input population...")
 
@@ -93,28 +98,34 @@ def plot_weight_diff(start_w, new_w, a_plus, a_minus, w2s):
 # In[3]:
 
 num_in = 50
-num_hid = 100
+num_hid = 70
+
+num_del = num_in*0.5
 
 t_step = 2.
-start_t = 10.
-twin = start_t + t_step*num_in + 2
+start_t = 16.
+twin = (start_t + t_step*num_in)*1.2
 patts = []
 
 patts.append(pat_gen.random_pattern(num_in, start_time=start_t, 
                                     end_time=start_t+t_step*num_in, 
                                     seed=1))
+remove_rand(patts[0], num_del, num_in, seed=9)
 
 patts.append(pat_gen.random_pattern(num_in, start_time=start_t, 
                                     end_time=start_t+t_step*num_in, 
                                     seed=2))
+remove_rand(patts[1], num_del, num_in, seed=50)
 
 patts.append(pat_gen.random_pattern(num_in, start_time=start_t, 
                                     end_time=start_t+t_step*num_in, 
                                     seed=23))
+remove_rand(patts[2], num_del, num_in, seed=91)
 
 patts.append(pat_gen.random_pattern(num_in, start_time=start_t, 
                                     end_time=start_t+t_step*num_in, 
                                     seed=13))
+remove_rand(patts[3], num_del, num_in, seed=41)
 
 # patts.append(pat_gen.diagonal(num_in, time_step=t_step, 
 #                               directions={pat_gen.HORZ: pat_gen.LEFT_TO_RIGHT,
@@ -147,7 +158,7 @@ single_patt = pat_gen.merge_patterns( single_patt,
 single_patt = pat_gen.merge_patterns( single_patt,
                                       pat_gen.move_in_time(len(patts)*twin*2, single_patt) )
 
-max_ts = [ r[-1] for r in single_patt ]
+max_ts = [ r[-1] for r in single_patt if r ]
 run_time = int(np.max(max_ts)*1.1)
 
 
@@ -166,62 +177,67 @@ plt.close()
 # In[4]:
 
 w2s = 2.
-wdiv = float(num_in)
-start_w = (w2s/wdiv)*0.5
-# np.random.seed(1)
-np.random.seed()
+wdiv = float(num_in)*0.2
+start_w = (w2s/wdiv)
+np.random.seed(3951)
+# np.random.seed()
 # w_in2hid = np.random.random(size=(num_in*num_hid))*start_w
 w_in2hid = np.random.normal(loc=start_w, size=(num_in*num_hid))
 
 # in2hid = std_conn.all2all(num_in, num_hid, w_in2hid)
 
-hid2inh, inh2hid = std_conn.wta_interneuron(num_hid, ff_weight=w2s, fb_weight=-w2s*1.1)
+hid2inh, inh2hid = std_conn.wta_interneuron(num_hid, ff_weight=w2s, fb_weight=-w2s*1.)
 
 
 # In[5]:
 
 cell = sim.IF_curr_exp
 i_offset = 0.
-exc_params = { 'cm': 0.35,  # nF
-               'i_offset': i_offset,
-               'tau_m': 5.5,
-               'tau_refrac': 8.0,
-               'tau_syn_E': 2.,
-               'tau_syn_I': 2.,
-               'v_reset': -70.6,
-               'v_rest': -65.0,
-               'v_thresh': -50.
-             }
-# inh_params = exc_params
-# exc_params = { 'cm': 0.2,  # nF
-#                'i_offset': i_offset,
-#                'tau_m': 10.0,
-#                'tau_refrac': 5.0,
-#                'tau_syn_E': 2.5,
-#                'tau_syn_I': 2.,
-#                'v_reset': -70.0,
-#                'v_rest': -65.0,
-#                'v_thresh': -55.4
-#              }
-inh_params = { 'cm': 0.25,  # nF
-               'i_offset': i_offset,
-               'tau_m': 5.5,
-               'tau_refrac': 1.0,
-               'tau_syn_E': 6.,
-               'tau_syn_I': 1.,
-               'v_reset': -70.0,
-               'v_rest': -65.0,
-               'v_thresh': -55.4
-             }
+def params(i_offset):
+    exc_params = { 'cm': 0.35,  # nF
+                   'i_offset': i_offset,
+                   'tau_m': 5.5,
+                   'tau_refrac': 4.0,
+                   'tau_syn_E': 2.,
+                   'tau_syn_I': 4.,
+                   'v_reset': -70.6,
+                   'v_rest': -65.0,
+                   'v_thresh': -50.
+                 }
+    # inh_params = exc_params
+    # exc_params = { 'cm': 0.2,  # nF
+    #                'i_offset': i_offset,
+    #                'tau_m': 10.0,
+    #                'tau_refrac': 5.0,
+    #                'tau_syn_E': 2.5,
+    #                'tau_syn_I': 2.,
+    #                'v_reset': -70.0,
+    #                'v_rest': -65.0,
+    #                'v_thresh': -55.4
+    #              }
+    inh_params = { 'cm': 0.25,  # nF
+                   'i_offset': i_offset,
+                   'tau_m': 5.5,
+                   'tau_refrac': 1.0,
+                   'tau_syn_E': 7.,
+                   'tau_syn_I': 1.,
+                   'v_reset': -70.0,
+                   'v_rest': -65.0,
+                   'v_thresh': -55.4
+                 }
+    return exc_params, inh_params
 
 if sim.__name__ == 'pyNN.spiNNaker':
     sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 100)
 
-num_cycles = 300
+num_cycles = 100
+plot_every = 10
 ws = w_in2hid.copy()
 w_history = []
 spikes = {}
 for cycle in range(num_cycles):
+    np.random.seed()
+    exc_params, inh_params = params(np.random.random()*0.1)
     print("Cycle %d"%cycle)
     sim.setup(timestep=1., min_delay=1., max_delay=14.)
     print("\tpopulations")
@@ -238,7 +254,7 @@ for cycle in range(num_cycles):
     tau_plus = 16.8
     tau_minus = 33.7
     w_min = 0.
-    w_max = w2s
+    w_max = w2s*0.4
     a_plus = 0.13125
     a_minus = 0.85*a_plus
     
@@ -287,17 +303,18 @@ for cycle in range(num_cycles):
     ws[:] = w_in2hid_out.reshape(num_in*num_hid)
     sim.end()
     
-    fig = plt.figure()
-    plot_sim_spikes(spikes, pops)
-    plt.draw()
-    plt.savefig(os.path.join(fig_path, 'spikes_cycle_%d.png'%cycle), dpi=300)
-    plt.close()
-    
-    fig = plt.figure()
-    plot_weight_diff(w_in2hid, w_in2hid_out, a_plus, a_minus, w2s)
-    plt.draw()
-    plt.savefig(os.path.join(fig_path, 'weight_diff_cycle_%d.png'%cycle), dpi=300)
-    plt.close()
+    if cycle%plot_every == 0:
+        fig = plt.figure()
+        plot_sim_spikes(spikes, pops)
+        plt.draw()
+        plt.savefig(os.path.join(fig_path, 'spikes_cycle_%d.png'%cycle), dpi=300)
+        plt.close()
+        
+        fig = plt.figure()
+        plot_weight_diff(w_in2hid, w_in2hid_out, a_plus, a_minus, w2s)
+        plt.draw()
+        plt.savefig(os.path.join(fig_path, 'weight_diff_cycle_%d.png'%cycle), dpi=300)
+        plt.close()
 
     w_history.append(w_in2hid_out.copy())
 

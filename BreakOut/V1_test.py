@@ -116,13 +116,14 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
                                               up_down=0)
     else:
         off_imgs[:] = [i for i in on_imgs]
-    fps = 15.
+    fps = 50.
     mspf = int(1000./fps)
     fourcc = cv2.VideoWriter_fourcc(*'mp4v')
     title = title.replace(' ', '_')
     title = title.replace(':', '--_')
     scl = 20
     vid_shape = (img_w*scl, img_h*scl)
+    # vid_shape = (img_h*scl, img_w*scl)
     vid_out = cv2.VideoWriter("%s.m4v"%title, fourcc, fps, vid_shape)
     num_imgs = len(on_imgs)
     # cols = 10
@@ -194,13 +195,13 @@ print(cam.size)
 cam.record()
 
 burst_params  = {'a': 0.02, 'b': 0.25, 'c': -55.0, 'd': 0.05, 
-                 'v_init': -64., 'u_init': -64*0.25, 'tau_syn_E': 10.}
+                 'v_init': -64., 'u_init': -64*0.25, 'tau_syn_E': 8.}
 class2_params = {'a': 0.2, 'b': 0.26, 'c': -65.0, 'd': 0.0, 
                  'v_init': -64., 'u_init': -64*0.26}
 relay = sim.Population(img_w*img_h*2, sim.IZK_curr_exp, 
                        burst_params, label='relay')
 relay.record()
-sim.Projection(cam, relay, sim.OneToOneConnector(weights=10.))
+sim.Projection(cam, relay, sim.OneToOneConnector(weights=2.))
 
 cfg = {'record': {'voltages': False, 
                   'spikes': True,
