@@ -76,3 +76,6 @@ def seed_rand(seed=None):
         # time.sleep(0.001)
         # seed = np.uint32(time.time()*(10*15))
     np.random.seed(seed)
+
+def subsamp_size(start, end, step):
+    return ( (end - start - 1)//step ) + 1

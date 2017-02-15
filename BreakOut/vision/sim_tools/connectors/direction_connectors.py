@@ -1,3 +1,4 @@
+from ..common import *
 import numpy as np
 import sys
 
@@ -57,7 +58,10 @@ def direction_connection_angle(direction, max_angle, max_dist,
             on_chan = True
             exc[:], inh[:] = dcah(dang, max_angle, max_dist, x, y, 
                                   width, height, mapfunc, on_chan, 
-                                  exc_delay, inh_delay,
+                                  exc_delay=exc_delay, 
+                                  inh_delay=inh_delay,
+                                  start=start,
+                                  step=step,
                                   delay_func=delay_func, 
                                   weight_func=weight_func,
                                   weight=weight,
@@ -70,7 +74,10 @@ def direction_connection_angle(direction, max_angle, max_dist,
             on_chan = False
             exc[:], inh[:] = dcah(dang, max_angle, max_dist, x, y, 
                                   width, height, mapfunc, on_chan,
-                                  exc_delay, inh_delay, 
+                                  exc_delay=exc_delay, 
+                                  inh_delay=inh_delay,
+                                  start=start,
+                                  step=step,
                                   delay_func=delay_func,
                                   weight_func=weight_func,
                                   weight=weight,
@@ -87,6 +94,7 @@ def direction_connection_angle(direction, max_angle, max_dist,
 def direction_connection_angle_helper(dang, max_angle, max_dist, 
                                       start_x, start_y, width, height,
                                       mapfunc, is_on_channel,
+                                      start=0, step=1,
                                       exc_delay=2, inh_delay=1,
                                       delay_func=lambda d: d, 
                                       weight_func=lambda d, a, w: w,
@@ -99,14 +107,12 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
     chan = int(is_on_channel)
     coord = {}
     e = []; i = []
-    dst = start_y*width + start_x
-    src = mapfunc(start_y, start_x, chan, row_bits)
-    delay = delay_func(0)
-    w = weight_func(0, 0, weight)
-    e.append( (src, dst, w, exc_delay+delay) )
-    w = weight_func(0, 0, -weight*inh_weight_mult)
-    i.append( (src, dst, w, inh_delay+delay) )
-    
+    dst_width = subsamp_size(start, width, step)
+    dst_height = subsamp_size(start, height, step)
+    dst_y = subsamp_size(start, start_y, step)
+    dst_x = subsamp_size(start, start_x, step)
+    dst = int(dst_y*dst_width + dst_x)
+
     for a in range(-max_angle, max_angle + 1):
         for d in range(1, max_dist+1):
             new_c = True
@@ -141,8 +147,15 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
                     # i.append( (src, dst, w, inh_delay) )
                     i.append( (src, dst, w, inh_delay+delay) )
                     
-            
+    if e:
+        src = mapfunc(start_y, start_x, chan, row_bits)
+        delay = delay_func(0)
+        w = weight_func(0, 0, weight)
+        e.append( (src, dst, w, exc_delay+delay) )
+        w = weight_func(0, 0, -weight*inh_weight_mult)
+        i.append( (src, dst, w, inh_delay+delay) )
 
+        
     # return [unique_rows(e), unique_rows(i)]
     return [e, i]
 

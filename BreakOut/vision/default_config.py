@@ -43,7 +43,7 @@ wta_inh_cell_params = { 'cm': 0.3,  # nF
 
 g_w2s = 2.
 inh_w2s = 2.
-dir_w2s = 1.9 #0.5
+dir_w2s = 2.#1.9 #0.5
 ssamp_w2s = 3.
 w2s_e = 1.
 
@@ -59,11 +59,11 @@ defaults_retina = {
                              # 'step': 3, 'start': 0},
 
                    'cs': {'std_dev': 0.8, 'sd_mult': 6.7, 'width': 3, 
-                               'step': 1, 'start':0, 'w2s_mult':1.},
+                          'step': 1, 'start':0, 'w2s_mult':1.},
                    'cs_half': {'std_dev': 1.8664, 'sd_mult': 6.7, 'width': 7,
-                                    'step': 3, 'start':0, 'w2s_mult': 5.},
+                               'step': 3, 'start':0, 'w2s_mult': 5.},
                    'cs_quart': {'std_dev': 4., 'sd_mult': 6.7, 'width': 15,
-                                       'step': 6, 'start': 0, 'w2s_mult': 6.},
+                                'step': 6, 'start': 0, 'w2s_mult': 6.},
                     #retina receives 1 spike per change, needs huge weights
                    'w2s': g_w2s*1.1, 
                    'inhw': inh_w2s,
@@ -78,12 +78,14 @@ defaults_retina = {
                              },
                              
                    'direction': {'keys': [
-                                          'E', 'W',
-                                          # 'N', 'S',
-                                          # 'NW', 'SW', 'NE', 'SE',
-                                          # 'east', 'south', 'west', 'north',
-                                          # 'south east', 'south west', 
-                                          # 'north east', 'north west'
+                                          'E', 
+                                          #'W',
+                                          #'N', 
+                                          #'S',
+                                          #'NW', 'SW', 'NE', 'SE',
+                                          #'east', 'south', 'west', 'north',
+                                          #'south east', 'south west', 
+                                          #'north east', 'north west'
                                          ],
                                  'div': 4,#6,
                                  'weight': dir_w2s,
@@ -93,7 +95,7 @@ defaults_retina = {
                                  'angle': 7,
                                  'dist': 4,
                                  'delay_func': lambda dist: dir_delay*dist, 
-                                               # 20ms = 1000/framerate
+                                               #20ms = 1000/framerate
                                  'step': 1,
                                  'start': 0,
                                  

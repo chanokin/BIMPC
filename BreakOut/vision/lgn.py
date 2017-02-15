@@ -21,18 +21,11 @@ class LGN():
         self.sim     = simulator
         self.retina  = retina
         self.channels = retina.channels
+        self.shapes  = retina.shapes
         
-        self.width   = retina.filter_width
-        self.height  = retina.filter_height
-        self.size    = retina.filter_size
+        self.width   = retina.width
+        self.height  = retina.height
 
-        self.width2  = retina.filter_width2
-        self.height2 = retina.filter_height2
-        self.size2   = retina.filter_size2
-
-        self.width4  = retina.filter_width4
-        self.height4 = retina.filter_height4
-        self.size4   = retina.filter_size4
 
         print("\tBuilding kernels...")
         self.build_kernels()

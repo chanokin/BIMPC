@@ -24,6 +24,8 @@ from vision.v1 import V1
 from vision.spike_tools.pattern import pattern_generator as pat_gen
 import pickle
 import cv2
+import os
+import sys
 
 # from pyNN import nest as sim
 from pyNN import spiNNaker as sim
@@ -212,7 +214,19 @@ mode = dvs_modes[MERGED]
 retina = Retina(sim, relay, img_w, img_h, mode, cfg=cfg)
 retina.pops['on']['cam_inter'].record()
 retina.pops['off']['cam_inter'].record()
-
+print("RETINA SIZES --------------------------------------------")
+for k in retina.shapes:
+    print(k)
+    print(retina.shapes[k])
+print("RETINA CONNECTORS +++++++++++++++++++++++++++++++++++++++++++++")
+for c in retina.conns:
+    for k in retina.conns[c]:
+        print(c, k)
+        if 'dir' in k:
+            for conn in retina.conns[c][k]:
+                for ccc in conn:
+                    print(ccc)
+# sys.exit()
 
 if do_lgn:
     cfg = {'record': {'voltages': False, 
@@ -370,16 +384,19 @@ if 'on' in out_spks:
     #         print(len(out_spks['on'][p][t]))
     #         print(len(out_spks['off'][p][t]))
             
-            if p == 'cs4':
-                w = retina.filter_width4
-                h = retina.filter_height4
-            elif p == 'cs2':
-                w = retina.filter_width2
-                h = retina.filter_height2
-            else:
-                w = img_w
-                h = img_h
-                
+            if 'cs' in p:
+                w = retina.shapes[p]['width']
+                h = retina.shapes[p]['height']
+            elif 'gabor' in p:
+                w = retina.shapes['gabor']['width']
+                h = retina.shapes['gabor']['height']
+            elif 'dir' in p:
+                w = retina.shapes['dir']['width']
+                h = retina.shapes['dir']['height']
+            else: 
+                w = 0
+                h = 0
+
             fig = plt.figure()#figsize=(16, 18))
             plot_output_spikes(out_spks['on'][p][t], marker='x', markeredgewidth=1., 
                                markeredgecolor='g', color='g')

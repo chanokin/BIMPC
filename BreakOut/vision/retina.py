@@ -26,6 +26,9 @@ class Retina():
         for k in defaults.keys():
             if k not in cfg.keys():
                 cfg[k] = defaults[k]
+
+        self.sim = simulator
+        self.cfg = cfg
         
         self.width = width
         self.height = height
@@ -40,34 +43,44 @@ class Retina():
         self.shapes = {}
         ### // <- integer div
         self.css = ['cs', 'cs2', 'cs4']
-        self.filter_width  = ((width  - cfg['cs']['start'])//cfg['cs']['step'])
-        self.filter_height = ((height - cfg['cs']['start'])//cfg['cs']['step']) 
-        self.filter_size   = self.filter_width*self.filter_height
-        self.shapes['cs'] = {'width': self.filter_width, 'height': self.filter_height,
-                             'size':  self.filter_size,  'step':   cfg['cs']['step'],
+        w = subsamp_size(cfg['cs']['start'], width,  cfg['cs']['step'])
+        h = subsamp_size(cfg['cs']['start'], height, cfg['cs']['step'])
+        self.shapes['cs'] = {'width': w, 'height': h, 'size': w*h,
+                             'step':  cfg['cs']['step'],
                              'start': cfg['cs']['start']}
                              
-        
-        self.filter_width2  = ((width  - cfg['cs_half']['start'])//cfg['cs_half']['step'])
-        self.filter_height2 = ((height - cfg['cs_half']['start'])//cfg['cs_half']['step'])
-        self.filter_size2   = self.filter_width2*self.filter_height2
-        self.shapes['cs2'] = {'width': self.filter_width, 'height': self.filter_height,
-                              'size':  self.filter_size,  'step':   cfg['cs_half']['step'],
+        w = subsamp_size(cfg['cs_half']['start'], width,  cfg['cs_half']['step'])
+        h = subsamp_size(cfg['cs_half']['start'], height, cfg['cs_half']['step'])
+        self.shapes['cs2'] = {'width': w, 'height': h, 'size': w*h,
+                              'step':  cfg['cs_half']['step'],
                               'start': cfg['cs_half']['start']}
 
-        self.filter_width4  = ((width  - cfg['cs_quart']['start'])//cfg['cs_quart']['step'])
-        self.filter_height4 = ((height - cfg['cs_quart']['start'])//cfg['cs_quart']['step'])
-        self.filter_size4   = self.filter_width4*self.filter_height4
-        self.shapes['cs4'] = {'width': self.filter_width, 'height': self.filter_height,
-                              'size':  self.filter_size,  'step':   cfg['cs_quart']['step'],
+        w = subsamp_size(cfg['cs_quart']['start'], width,  cfg['cs_quart']['step'])
+        h = subsamp_size(cfg['cs_quart']['start'], height, cfg['cs_quart']['step'])
+        self.shapes['cs4'] = {'width': w, 'height': h, 'size': w*h,
+                              'step':  cfg['cs_quart']['step'],
                               'start': cfg['cs_quart']['start']}
         
         if 'direction' in cfg:
-            w = (width - cfg['direction']['start'])//cfg['direction']['step']
-            h = (height - cfg['direction']['start'])//cfg['direction']['step']
-            self.shapes['dir'] = {'width': w, 'height': h, 'size': w*h, 
+            w = subsamp_size(cfg['direction']['start'], width,  
+                             cfg['direction']['step'])
+            h = subsamp_size(cfg['direction']['start'], height, 
+                             cfg['direction']['step'])
+            self.shapes['dir'] = {'width': w, 'height': h, 'size': w*h,
                                   'step':  cfg['direction']['step'],
                                   'start': cfg['direction']['start']}
+        
+        if 'gabor' in cfg and cfg['gabor']:
+            w = subsamp_size(cfg['gabor']['start'], width,  cfg['gabor']['step'])
+            h = subsamp_size(cfg['gabor']['start'], height, cfg['gabor']['step'])
+            self.shapes['gabor'] = {'width': w, 'height': h, 'size': w*h,
+                                    'step': cfg['gabor']['step'],
+                                    'start': cfg['gabor']['start']}
+                                
+            self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
+            self.angles = [i*self.ang_div for i in range(cfg['gabor']['num_divs'])]
+        
+        print(self.shapes)
         
         self.channels = ['on', 'off']
 
@@ -75,21 +88,7 @@ class Retina():
                     'off': camera_pop if dvs_mode==dvs_modes[0] else camera_pop[OFF],
                    }
         
-        self.sim = simulator
-        
-        self.cfg = cfg
-        
         self.mapping_f = cfg['input_mapping_func']
-        
-        if 'gabor' in cfg and cfg['gabor']:
-            w = (width - cfg['gabor']['start'])//cfg['gabor']['step']
-            h = (height - cfg['gabor']['start'])//cfg['gabor']['step']
-            self.shapes['gabor'] = {'width': w, 'height': h,
-                                    'size': w*h, 'step': cfg['gabor']['step'],
-                                    'start': cfg['gabor']['start']}
-                                
-            self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
-            self.angles = [i*self.ang_div for i in range(cfg['gabor']['num_divs'])]
         
         print("\tBuilding kernels...")
         self.build_kernels()
@@ -203,7 +202,7 @@ class Retina():
         if 'direction' in cfg:
             for dk in cfg['direction']['keys']:
                 k = "%s_dir"%dk
-                if '2' in dk or dk.isupper():
+                if '2' in dk  or  dk.isupper():
                     dir_cn = dir_conn.direction_connection_angle
                     conns = dir_cn(dk, 
                                    cfg['direction']['angle'],
@@ -345,7 +344,8 @@ class Retina():
                 elif 'dir' in p:
                     filter_size = self.shapes['dir']['size']
                 else:
-                    raise Exception("In Retina-build_populations: can't find population size")
+                    raise Exception("In Retina-build_populations: can't ",
+                                    "find population size")
 
                 self.pops[k][p] = {'bipolar': sim.Population(filter_size,
                                                              exc_cell, exc_parm,

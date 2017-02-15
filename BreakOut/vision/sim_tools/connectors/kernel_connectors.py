@@ -29,17 +29,21 @@ def full_kernel_connector(pre_layer_width, pre_layer_height, kernel,
     inh_conns = []
     kh, kw = kernel.shape
     half_kh, half_kw = kh//2, kw//2
-    num_dst = ( (layer_height - row_start)//row_step )*\
-              ( (layer_width  - col_start)//col_step )
     
+    dst_width  = subsamp_size(col_start, layer_width, col_step)
+    dst_height = subsamp_size(row_start, layer_height, row_step)
+    num_dst = dst_width*dst_height
     exc_counts = [0 for dr in range(num_dst)]
     inh_counts = [0 for dr in range(num_dst)]
-
+    
     for dr in range(row_start, layer_height, row_step):
         for dc in range(col_start, layer_width, col_step):
 
             sr0 = dr - half_kh
             sc0 = dc - half_kw
+            drr = subsamp_size(row_start, dr, row_step)
+            dcc = subsamp_size(col_start, dc, col_step)
+            dst = drr*dst_width + dcc
 
             for kr in range(kh):
                 sr = sr0 + kr
@@ -60,7 +64,6 @@ def full_kernel_connector(pre_layer_width, pre_layer_height, kernel,
                     # src = sr*layer_width + sc + src_start_idx
                     # divide values so that indices match the size of the
                     # Post (destination) next layer
-                    dst = (dr//row_step)*(layer_width//col_step) + (dc//col_step)
                     
                     if dst >= num_dst:
                         continue
