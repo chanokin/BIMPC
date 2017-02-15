@@ -169,9 +169,8 @@ class Retina():
         krn_conn = conn_krn.full_kernel_connector
         for c in self.conns:
             for k in css:
-                on_path = (k == 'on')
-                self.conns[c][k] = krn_conn( self.width,
-                                             self.height, 
+                on_path = (c == 'on')
+                self.conns[c][k] = krn_conn( self.width, self.height, 
                                              self.kernels[k],
                                              exc_delay=cfg['kernel_exc_delay'],
                                              inh_delay=cfg['kernel_inh_delay'],
@@ -187,9 +186,8 @@ class Retina():
             for c in self.conns:
                 for k in self.gab.keys():
                     krn = self.gab[k]
-                    on_path = (k == 'on')
-                    self.conns[c][k] = krn_conn(self.width,
-                                                self.height, 
+                    on_path = (c == 'on')
+                    self.conns[c][k] = krn_conn(self.width, self.height, 
                                                 krn,
                                                 cfg['kernel_exc_delay'],
                                                 cfg['kernel_inh_delay'],
