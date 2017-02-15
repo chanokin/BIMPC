@@ -187,7 +187,7 @@ spk_sa = output_to_spike_source_array(spks, img_w*img_h*2)
 w2s =3.
 sim.setup(timestep=1., max_delay=144., min_delay=1.)
 if sim.__name__ == 'pyNN.spiNNaker':
-    sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 65)
+    sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 70)
     
 
 

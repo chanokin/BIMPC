@@ -79,9 +79,9 @@ defaults_retina = {
                              
                    'direction': {'keys': [
                                           'E', 
-                                          #'W',
-                                          #'N', 
-                                          #'S',
+                                          # 'W',
+                                          # 'N', 
+                                          # 'S',
                                           #'NW', 'SW', 'NE', 'SE',
                                           #'east', 'south', 'west', 'north',
                                           #'south east', 'south west', 
@@ -92,11 +92,11 @@ defaults_retina = {
                                  'delays': [1, 4, 6, 8],#, 3, 4 ],
                                  'subsamp': 1,#2,
                                  'w2s': ssamp_w2s,
-                                 'angle': 7,
+                                 'angle': 11,
                                  'dist': 4,
                                  'delay_func': lambda dist: dir_delay*dist, 
                                                #20ms = 1000/framerate
-                                 'step': 1,
+                                 'step': 3,
                                  'start': 0,
                                  
                                 },
