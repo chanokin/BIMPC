@@ -43,7 +43,7 @@ wta_inh_cell_params = { 'cm': 0.3,  # nF
 
 g_w2s = 2.
 inh_w2s = 2.
-dir_w2s = 2.#1.9 #0.5
+dir_w2s = 2.
 ssamp_w2s = 3.
 w2s_e = 1.
 

@@ -67,7 +67,7 @@ class Retina():
             self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
             self.angles = [i*self.ang_div for i in range(cfg['gabor']['num_divs'])]
         
-        print(self.shapes)
+        # print(self.shapes)
         
         self.channels = ['on', 'off']
 

@@ -17,14 +17,13 @@ class LGN():
             if k not in cfg.keys():
                 cfg[k] = defaults[k]
         
-        self.cfg     = cfg
-        self.sim     = simulator
-        self.retina  = retina
+        self.cfg      = cfg
+        self.sim      = simulator
+        self.retina   = retina
         self.channels = retina.channels
-        self.shapes  = retina.shapes
-        
-        self.width   = retina.width
-        self.height  = retina.height
+        self.shapes   = retina.shapes
+        self.width    = retina.width
+        self.height   = retina.height
 
 
         print("\tBuilding kernels...")
@@ -43,6 +42,28 @@ class LGN():
         self.build_projections()
         print("\t\tdone!")
 
+    def _right_key(self, key):
+        if 'gabor' in key:
+            return 'gabor'
+        elif 'dir' in key:
+            return 'dir'
+        else:
+            return key
+        
+    def pop_size(self, key):
+        return self.shapes[self._right_key(key)]['size']
+    
+    def pop_width(self, key):
+        return self.shapes[self._right_key(key)]['width']
+    
+    def pop_height(self, key):
+        return self.shapes[self._right_key(key)]['height']
+
+    def sample_step(self, key):
+        return self.shapes[self._right_key(key)]['step']
+    
+    def sample_start(self, key):
+        return self.shapes[self._right_key(key)]['start']
 
     def output_keys(self):
         return self.pops[self.channels[0]].keys()
@@ -64,33 +85,36 @@ class LGN():
     def build_connectors(self):
         cfg = self.cfg
         conns = {}
-
-        exc, inh = conn_krn.full_kernel_connector(self.width,
-                                                  self.height,
-                                                  self.split_cs[EXC],
-                                                  cfg['kernel_exc_delay'],
-                                                  cfg['kernel_inh_delay'],
-                                                  cfg['col_step'], 
-                                                  cfg['row_step'],
-                                                  cfg['start_col'], 
-                                                  cfg['start_row'],
-                                                  map_to_src=mapf.row_major,
-                                                  row_bits=self.width)
         
-        tmp, inh[:] = conn_krn.full_kernel_connector(self.width,
-                                                     self.height,
-                                                     self.split_cs[INH],
-                                                     cfg['kernel_exc_delay'],
-                                                     cfg['kernel_inh_delay'],
-                                                     cfg['col_step'], 
-                                                     cfg['row_step'],
-                                                     cfg['start_col'], 
-                                                     cfg['start_row'],
-                                                     map_to_src=mapf.row_major,
-                                                     row_bits=self.width,
-                                                     remove_inh_only=False)
+        for k in retina.pops[retina.channels[0]]:
+            width, height = self.pop_width(k), self.pop_height(k)
+            conns[p] = {}
+            exc, inh = conn_krn.full_kernel_connector(self.width,
+                                                      self.height,
+                                                      self.split_cs[EXC],
+                                                      cfg['kernel_exc_delay'],
+                                                      cfg['kernel_inh_delay'],
+                                                      cfg['col_step'], 
+                                                      cfg['row_step'],
+                                                      cfg['start_col'], 
+                                                      cfg['start_row'],
+                                                      map_to_src=mapf.row_major,
+                                                      row_bits=self.width)
+            
+            tmp, inh[:] = conn_krn.full_kernel_connector(self.width,
+                                                         self.height,
+                                                         self.split_cs[INH],
+                                                         cfg['kernel_exc_delay'],
+                                                         cfg['kernel_inh_delay'],
+                                                         cfg['col_step'], 
+                                                         cfg['row_step'],
+                                                         cfg['start_col'], 
+                                                         cfg['start_row'],
+                                                         map_to_src=mapf.row_major,
+                                                         row_bits=self.width,
+                                                         remove_inh_only=False)
 
-        conns['split'] = [exc, inh]
+            conns['split'] = [exc, inh]
 
         exc, inh = conn_krn.full_kernel_connector(self.width2,
                                                   self.height2,

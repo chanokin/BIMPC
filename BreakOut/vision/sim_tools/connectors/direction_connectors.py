@@ -3,9 +3,9 @@ import numpy as np
 import sys
 
 def unique_rows(a):
-    print(len(a), len(a[0]))
+    # print(len(a), len(a[0]))
     a = np.ascontiguousarray(a)
-    print(a.shape, a.dtype)
+    # print(a.shape, a.dtype)
     unique_a = np.unique(a.view([('', a.dtype)]*a.shape[1]))
     shape = (unique_a.shape[0], a.shape[1])
     return unique_a.view(a.dtype).reshape(shape)
