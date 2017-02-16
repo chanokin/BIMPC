@@ -40,10 +40,17 @@ retina.pop_size(pop_key)
 
 Neuron IDs in "ganglion" populations are row-major mapped. That is
 
+```
 [  0     1   2  ...    W-1   ]
 [  W    W+1 W+2 ...   2W-1   ]
    :     :   :         :
 [(H-1)W    ...     (H-1)(W-1)]
+```
 
-id = row*W + col
+Mapping to and from neuron id 
 
+```python
+nID = row*W + col
+row = row//W #integer division
+col = row%W  #modulo operator
+```
