@@ -137,42 +137,70 @@ defaults_lgn = {'kernel_width': 3,
 ####################           V 1          ###########################
 #######################################################################
 
+# unit_type = 'autoencoder'
+# unit_type = 'liquid_state'
+unit_type = 'four_to_one'
+
+
 #from A Statistical Analysis of Information-Processing Properties of 
 #Lamina-SpecificCortical Microcircuit Models
-column_conn = {'l2': {'inh': 0.2, 'exc': 0.8,
-                      'exc2inh': 0.21, 'inh2exc': 0.16,
-                      'exc2exc': 0.26, 'inh2inh': 0.25,
-                      'exc2l5e': 0.55, 'inh2l5e': 0.20,
-                      'exc2l4i': 0.8,
-                     },
-               'l4': {'inh': 0.2, 'exc': 0.8,
-                      'exc2inh': 0.19, 'inh2exc': 0.10,
-                      'exc2exc': 0.17, 'inh2inh': 0.50,
-                      'exc2l2e': 0.28, 'inh2l2e': 0.50,
-                     },
-               'l5': {'inh': 0.2, 'exc': 0.8,
-                      'exc2inh': 0.10, 'inh2exc': 0.12,
-                      'exc2exc': 0.09, 'inh2inh': 0.60,
-                      'exc2l2e': 0.03,
-                     },
-              }
-input_conn = {'main':  {'l2e': 0.20,
-                        'l4e': 0.80, 'l4i': 0.50,
-                        'l5e': 0.10,
-                       },
-              'extra': {'l2e': 0.20,
-                       }
-             }
-neurons_in_column = {'l2': 10,
+pop_ratio = {'l2': {'inh': 0.2, 'exc': 0.8},
+             'l4': {'inh': 0.2, 'exc': 0.8},
+             'l5': {'inh': 0.2, 'exc': 0.8},
+            }
+
+column_conn_wgt = {'l2': {'exc2inh': 1.90, 'inh2exc': -0.65,
+                          'exc2exc': 1.70, 'inh2inh': -1.35,
+                          'exc2l5e': 1.40, 'inh2l5e': -5.20,
+                          'exc2l4i': 1.60,
+                         },
+                   'l4': {'exc2inh': 3.70, 'inh2exc': -0.85,
+                          'exc2exc': 1.10, 'inh2inh': -1.55,
+                          'exc2l2e': 4.00, 'inh2l2e': -1.75,
+                          'inh2l2i': -1.5,
+                         },
+                   'l5': {'exc2inh': 0.90, 'inh2exc': -1.20,
+                          'exc2exc': 1.70, 'inh2inh': -1.20,
+                          'exc2l2e': 0.30,
+                         },
+                  }
+column_conn_prob = {'l2': {'exc2inh': 0.21, 'inh2exc': 0.16,
+                           'exc2exc': 0.26, 'inh2inh': 0.25,
+                           'exc2l5e': 0.55, 'inh2l5e': 0.20,
+                           'exc2l4i': 0.08,
+                          },
+                    'l4': {'exc2inh': 0.19, 'inh2exc': 0.10,
+                           'exc2exc': 0.17, 'inh2inh': 0.50,
+                           'exc2l2e': 0.28, 'inh2l2e': 0.50,
+                           'inh2l2i': 0.20,
+                          },
+                    'l5': {'exc2inh': 0.10, 'inh2exc': 0.12,
+                           'exc2exc': 0.09, 'inh2inh': 0.60,
+                           'exc2l2e': 0.03,
+                          },
+                   }
+
+input_conn_prob = {'main':  {'l2e': 0.20,
+                             'l4e': 0.80, 'l4i': 0.50,
+                             'l5e': 0.10,
+                            },
+                   'extra': {'l2e': 0.20,
+                            }
+                  }
+neurons_in_column = {'l2': 40,
                      'l4': 100,
-                     'l6': 40}
-defaults_v1 = { 'w2s': g_w2s,
-                'column_conn': column_conn,
-                'input_conn': input_conn,
+                     'l5': 40}
+defaults_v1 = { 'unit_type': unit_type,
+                'w2s': g_w2s,
+                'pop_ratio': pop_ratio,
+                'column_conn_prob': column_conn_prob,
+                'column_conn_wgt': column_conn_wgt,
+                'input_conn_prob': input_conn_prob,
                 'neurons_in_column': neurons_in_column,
                 'context_in_weight': 0.3,
                 'context_to_context_weight': 0.5, 
                 'context_to_simple_weight': 1., 
+                'min_delay': 1.,
                 'max_delay': 14.,
                 'max_weight': 1.7,
                 'wta_inh_cell': { 'cell': wta_inh_cell,
@@ -207,8 +235,9 @@ defaults_v1 = { 'w2s': g_w2s,
                 'in_to_liquid_exc_probability': 0.8,
                 'in_to_liquid_inh_probability': 0.5,
                 'col_weight_func': lambda dist: w2s_e*np.exp(-dist),
-                'build_liquid': False,
+                'build_complex': False,
                 'build_readout': False,
+                'complex_recp_width': 9,
                }
 
 

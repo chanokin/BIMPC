@@ -24,7 +24,7 @@ class LGN():
         self.shapes   = retina.shapes
         self.width    = retina.width
         self.height   = retina.height
-
+        self.css      = retina.css
 
         print("\tBuilding kernels...")
         self.build_kernels()

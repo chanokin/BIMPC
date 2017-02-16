@@ -156,7 +156,7 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
 
 # In[3]:
 do_lgn = True
-do_v1  = False and do_lgn
+do_v1  = True and do_lgn
 learning_on = True
 learning_off = not learning_on
 # img_w, img_h = 160, 128

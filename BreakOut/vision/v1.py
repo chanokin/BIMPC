@@ -1,8 +1,8 @@
 from sim_tools.common import *
-from column import V1MultiColumn
-from liquid import Liquid
+from column import *
 from default_config import defaults_v1 as defaults
 import sys
+
 
 
 class V1():
@@ -21,22 +21,30 @@ class V1():
         self.learn_on = learning_on
         self.width   = lgn.width
         self.height  = lgn.height
+        self.complex_recp_width = cfg['complex_recp_width']
+        self.unit_type = cfg['unit_type']
+        self.column = self.unit_object()
         
-        self.pix_key   = 'cs'
-        self.feat_keys = [k for k in lgn.pops.keys() if k != 'cs']
-        self.num_in_ctx = len(self.feat_keys)
-        self.simples_per_liquid = 9 # 3x3 -> [[o o o][o (r,c) o][o o o]]
+        # 3x3 -> [[o o o][o o(r,c) o][o o o]]
         print("Building V1...")
         self.build_units()
         self.connect_units()
 
-
+    def unit_object(self):
+        if self.unit_type == 'autoencoder':
+            return V1AutoEncoderColumn
+        elif self.unit_type == 'liquid_state':
+            return V1MultiColumn
+        else:
+            return V1FourToOneColumn
+        
     def build_units(self):
         cfg = self.cfg
         in_start = cfg['in_receptive_start']
         in_step  = cfg['in_receptive_step']
         cols = []
-        total_cols = ((self.width-in_start)*(self.height-in_start))/(in_step**2)
+        total_cols = subsamp_size(in_start, self.width,  in_step)*\
+                     subsamp_size(in_start, self.height, in_step)
         num_steps = 60
         cols_to_steps = float(num_steps)/total_cols
         
@@ -52,9 +60,10 @@ class V1():
             simple[r] = {}
             for c in range(in_start, self.height, in_step):
                 coords = [r, c]
-                mc = V1MultiColumn(self.sim, self.lgn, self.learn_on,
-                                   self.width, self.height, coords, 
-                                   cfg['num_input_wta'], cfg=cfg)
+
+                mc = self.column(self.sim, self.lgn, 
+                                 self.width, self.height, 
+                                 coords, self.learn_on, cfg=cfg)
                 simple[r][c] = mc
                 
                 curr_col += 1
@@ -67,46 +76,10 @@ class V1():
         sys.stdout.write("\n")
         self.simple = simple
         self.num_simple = cfg['num_input_wta']*self.width*self.height
-        
-        if cfg['build_liquid']:
-            ### LIQUID (memory/hi-dim unfolding) ---------------------------
-            prev_step = 0
-            curr_col = 0
-            liquid = {}
-            readout = {}
-            sys.stdout.write("\t\tLiquid and Readout layers")
-            sys.stdout.flush()
-            keys_r = self.simple.keys().sorted()
-            for r in range(self.num_simple_rows)[1:-1:2]:
-                kr = keys_r[r]
-                liquid[r] = {}
-                keys_c = self.simple[r].keys().sorted()
-                for c in range(len(keys_c))[1:-1:2]:
-                    kc = keys_c[c]
-                    in_pops = self.liquid_in_units(r, c, keys_r, keys_c)
-                    coords = [kr, kc]
 
-                    liquid[r][c] = Liquid(self.sim, in_pops, 
-                                          cfg['num_input_wta'], 
-                                          False, #learning_on
-                                          self.width, self.height, 
-                                          coords, self.simples_per_liquid, 
-                                          cfg['num_liquid'], cfg=self.cfg)
+    def build_complex(self):
+        pass
 
-                    curr_col += 1
-                    curr_step = int(curr_col*cols_to_steps)
-                    if curr_step > prev_step:
-                        prev_step = curr_step
-                        sys.stdout.write("#")
-                        sys.stdout.flush()
-                    
-            sys.stdout.write("\n")
-            self.liquid = liquid
-            self.readout = readout
-            
-        if cfg['build_readout']:
-            pass
-            
     def connect_units(self):
         pass
 

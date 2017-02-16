@@ -37,7 +37,7 @@ def subsample(in_width, in_height, width_sub, height_sub, is_up,
     for r in range(in_height):
         for c in range(in_width):
             src = coord_mapping(r, c, up_down, in_width, in_height)
-            dst = (r//height_sub)*out_width + c//width_sub,
+            dst = (r//height_sub)*out_width + c//width_sub
 
             conns.append(( src, dst, weight, delay ))
     
@@ -89,6 +89,62 @@ def wta_interneuron(num_neurons, ff_weight=2., fb_weight=-2., delay=1.,
     return conn_ff, conn_fb
 
 
+def izk_prob_connector(num_total, num_src, num_dst, prob, weight, delay, 
+                       std_dev=1., weight_std_dev=None, max_delay=None, 
+                       seed=None):
+    avg_conns = num_total*prob
+    conns = []
+    for src in range(num_src):
+        np.random.seed(seed)
+        num_conns = np.random.normal(loc=avg_conns, scale=std_dev)
+        np.random.seed(seed)
+        post = np.random.choice(num_dst, size=num_conns, replace=False)
+        if num_src == num_post: #no self-connections
+            post = np.array([i for i in range(post.size) if src != i])
+        num_conns = post.size
+
+        if weight_std_dev is None:
+            weights = np.ones_like(post)*weight
+        else:
+            np.random.seed(seed)
+            weights = np.random.normal(loc=weight, scale=weight_std_dev,
+                                       size=num_conns)
+        if max_delay is None:
+            delays = np.ones_like(post)*delay
+        else:
+            np.random.seed(seed)
+            delays = np.random.randint(delay, max_delay, size=num_conns)
+
+        conns += [(src, post[i], weights[i], delays[i]) for i in range(num_conns)]
+    
+    return conns
+    
+    
+def probability_connector(num_src, num_dst, prob, weight, delay, 
+                          std_dev=1., weight_std_dev=None, max_delay=None, 
+                          seed=None):
+    conns = []
+    for src in range(num_src):
+        np.random.seed(seed)
+        dice_roll = np.random.random(size=num_dst)
+        post = np.where(dice_roll <= prob)[0]
+        if num_src == num_dst: #no self-connections
+            post = np.array([i for i in range(post.size) if src != i])
+        num_conns = post.size
+
+        if weight_std_dev is None:
+            weights = np.ones_like(post)*weight
+        else:
+            np.random.seed(seed)
+            weights = np.random.normal(loc=weight, scale=weight_std_dev,
+                                       size=num_conns)
+        if max_delay is None:
+            delays = np.ones_like(post)*delay
+        else:
+            np.random.seed(seed)
+            delays = np.random.randint(delay, max_delay, size=num_conns)
+
+        conns += [(src, post[i], weights[i], delays[i]) for i in range(num_conns)]
 
  
 ######### given neuron id lists do connections
@@ -139,4 +195,38 @@ def list_wta_interneuron(pop, inter, ff_weight=2., fb_weight=-2., delay=1.):
 
     
     return conn_ff, conn_fb
+
+
+def list_probability_connector(src_list, dst_list, prob, weight, delay, 
+                               std_dev=1., weight_std_dev=None, max_delay=None, 
+                               seed=None):
+    num_src = len(src_list)
+    num_dst = len(dst_list)
+    dst_arr = np.array(dst_list)
+    conns = []
+    for src in src_list:
+        np.random.seed(seed)
+        dice_roll = np.random.random(size=num_dst)
+        post = dst_arr( np.where(dice_roll <= prob) )
+        if num_src == num_post: #no self-connections
+            post = np.array([post[i] for i in range(post.size) if src != post[i]])
+        num_conns = post.size
+
+        if isinstance(weight, list) or isinstance(weight, np.ndarray):
+            weights = np.ones_like(post)*weight[src]
+        elif weight_std_dev is None:
+            weights = np.ones_like(post)*weight
+        else:
+            np.random.seed(seed)
+            weights = np.random.normal(loc=weight, scale=weight_std_dev,
+                                       size=num_conns)
+        if max_delay is None:
+            delays = np.ones_like(post)*delay
+        else:
+            np.random.seed(seed)
+            delays = np.random.randint(delay, max_delay, size=num_conns)
+
+        conns += [(src, post[i], weights[i], delays[i]) for i in range(num_conns)]
+        
+    return conns
 
