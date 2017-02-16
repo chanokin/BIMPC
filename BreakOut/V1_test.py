@@ -101,7 +101,7 @@ def setup_cam_pop(sim, spike_array, img_w, img_h, w2s=1.6):
 
 
 def plot_out_spikes(on_spikes, off_spikes, img_w, img_h, 
-                    end_t_ms, ftime_ms, thresh, title):
+                    end_t_ms, ftime_ms, thresh, title, outdir):
     if len(on_spikes) == 0:
         return 
     
@@ -126,7 +126,8 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
     scl = 20
     vid_shape = (img_w*scl, img_h*scl)
     # vid_shape = (img_h*scl, img_w*scl)
-    vid_out = cv2.VideoWriter("%s.m4v"%title, fourcc, fps, vid_shape)
+    vid_out = cv2.VideoWriter(os.path.join(outdir,"%s.m4v"%title), 
+                              fourcc, fps, vid_shape)
     num_imgs = len(on_imgs)
     # cols = 10
     # rows = num_imgs//cols + 1
@@ -214,18 +215,18 @@ mode = dvs_modes[MERGED]
 retina = Retina(sim, relay, img_w, img_h, mode, cfg=cfg)
 retina.pops['on']['cam_inter'].record()
 retina.pops['off']['cam_inter'].record()
-print("RETINA SIZES --------------------------------------------")
-for k in retina.shapes:
-    print(k)
-    print(retina.shapes[k])
-print("RETINA CONNECTORS +++++++++++++++++++++++++++++++++++++++++++++")
-for c in retina.conns:
-    for k in retina.conns[c]:
-        print(c, k)
-        if 'dir' in k:
-            for conn in retina.conns[c][k]:
-                for ccc in conn:
-                    print(ccc)
+# print("RETINA SIZES --------------------------------------------")
+# for k in retina.shapes:
+    # print(k)
+    # print(retina.shapes[k])
+# print("RETINA CONNECTORS +++++++++++++++++++++++++++++++++++++++++++++")
+# for c in retina.conns:
+    # for k in retina.conns[c]:
+        # print(c, k)
+        # if 'dir' in k:
+            # for conn in retina.conns[c][k]:
+                # for ccc in conn:
+                    # print(ccc)
 # sys.exit()
 
 if do_lgn:
@@ -311,7 +312,7 @@ print("-------------------------------------------------------------------")
 # # plot RETINA
 
 # In[ ]:
-
+output_dir = './videos'
 
 plt.figure()
 plot_output_spikes(cam_spks['off'], color='red', markersize=3, 
@@ -319,7 +320,7 @@ plot_output_spikes(cam_spks['off'], color='red', markersize=3,
 plot_output_spikes(cam_spks['on'], color='green', markersize=3, 
                    marker='|', markeredgewidth=1, markeredgecolor='green')
 plt.suptitle("CAMERA SPIKES")
-plt.savefig("camera_spikes.png", dpi=150)
+plt.savefig(os.path.join(output_dir, "camera_spikes.png"), dpi=150)
 plt.draw()
 plt.close()
 
@@ -357,7 +358,7 @@ plot_output_spikes(inter_cam_spks['off'], color='red', markersize=3,
 plot_output_spikes(inter_cam_spks['on'], color='green', markersize=3, 
                    marker='|', markeredgewidth=1, markeredgecolor='green')
 plt.suptitle("INTER CAMERA SPIKES")
-plt.savefig("inter_camera_spikes.png", dpi=150)
+plt.savefig(os.path.join(output_dir, "inter_camera_spikes.png"), dpi=150)
 plt.draw()
 plt.close()
 
@@ -384,18 +385,8 @@ if 'on' in out_spks:
     #         print(len(out_spks['on'][p][t]))
     #         print(len(out_spks['off'][p][t]))
             
-            if 'cs' in p:
-                w = retina.shapes[p]['width']
-                h = retina.shapes[p]['height']
-            elif 'gabor' in p:
-                w = retina.shapes['gabor']['width']
-                h = retina.shapes['gabor']['height']
-            elif 'dir' in p:
-                w = retina.shapes['dir']['width']
-                h = retina.shapes['dir']['height']
-            else: 
-                w = 0
-                h = 0
+            w = retina.pop_width(p)
+            h = retina.pop_height(p)
 
             fig = plt.figure()#figsize=(16, 18))
             plot_output_spikes(out_spks['on'][p][t], marker='x', markeredgewidth=1., 
@@ -404,7 +395,8 @@ if 'on' in out_spks:
                                markeredgecolor='r', color='r')
             plt.suptitle("%s, %s"%(p, t))
             plt.draw()
-            plt.savefig("retina_%s_%s_spikes.png"%(p, t), dpi=150)
+            plt.savefig(os.path.join(output_dir, "retina_%s_%s_spikes.png"%(p, t)), 
+                        dpi=150)
             plt.close()
             
             plot_out_spikes(out_spks['on'][p][t], 
@@ -412,7 +404,8 @@ if 'on' in out_spks:
                             w, h, 
                             on_time_ms, ftime_ms, 
                             thresh=thresh, 
-                            title="retina_%s_%s"%(p, t))
+                            title="retina_%s_%s"%(p, t),
+                            outdir=output_dir)
             plt.close()
         
         
@@ -427,16 +420,8 @@ if do_lgn and 'on' in lgn_spks:
         if not lgn_spks['on'][k] and \
            not lgn_spks['off'][k]:
             continue
-        
-        if k == 'cs4':
-            w = retina.filter_width4
-            h = retina.filter_height4
-        elif k == 'cs2':
-            w = retina.filter_width2
-            h = retina.filter_height2
-        else:
-            w = img_w
-            h = img_h
+        w = lgn.pop_width(k)
+        h = lgn.pop_height(k)
         
         fig = plt.figure()#figsize=(16, 18))
         
@@ -444,16 +429,17 @@ if do_lgn and 'on' in lgn_spks:
         plot_output_spikes(lgn_spks['off'][k], color='r')
         plt.suptitle("LGN %s"%(k))
         plt.draw()
-        plt.savefig("lgn_%s_spikes.png"%(k), dpi=150)
+        plt.savefig(os.path.join(output_dir, "lgn_%s_spikes.png"%(k)), dpi=150)
         plt.close()
         
-        # plot_out_spikes(lgn_spks['on'][k],
-                        # lgn_spks['off'][k],
-                        # w, h, 
-                        # on_time_ms, ftime_ms, 
-                        # thresh=thresh, 
-                        # title="LGN_%s"%(k))
-        # plt.close()
+        plot_out_spikes(lgn_spks['on'][k],
+                        lgn_spks['off'][k],
+                        w, h, 
+                        on_time_ms, ftime_ms, 
+                        thresh=thresh, 
+                        title="LGN_%s"%(k),
+                        outdir=output_dir)
+        plt.close()
 
 # In[ ]:
 
@@ -469,7 +455,8 @@ if do_v1:
             plot_output_spikes(v1_spks[r][c], color='b')
             plt.suptitle("V1 simple (%d, %d)"%(r, c))
             plt.draw()
-            plt.savefig("v1_simple_(%d_%d)_spikes.png"%(r, c), dpi=150)
+            plt.savefig(os.path.join(output_dir, "v1_simple_(%d_%d)_spikes.png"%(r, c)),
+                        dpi=150)
             plt.close()
 
 
@@ -477,7 +464,8 @@ if do_v1:
             plot_output_spikes(v1_inh[r][c], color='r')
             plt.suptitle("V1 inh (%d, %d)"%(r, c))
             plt.draw()
-            plt.savefig("v1_inh_(%d_%d)_spikes.png"%(r, c), dpi=150)
+            plt.savefig(os.path.join(output_dir, "v1_inh_(%d_%d)_spikes.png"%(r, c)), 
+                        dpi=150)
             plt.close()
 
 # In[ ]:

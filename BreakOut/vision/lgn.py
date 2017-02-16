@@ -86,11 +86,10 @@ class LGN():
         cfg = self.cfg
         conns = {}
         
-        for k in retina.pops[retina.channels[0]]:
+        for k in self.retina.get_output_keys():
             width, height = self.pop_width(k), self.pop_height(k)
-            conns[p] = {}
-            exc, inh = conn_krn.full_kernel_connector(self.width,
-                                                      self.height,
+            conns[k] = {}
+            exc, inh = conn_krn.full_kernel_connector(width, height,
                                                       self.split_cs[EXC],
                                                       cfg['kernel_exc_delay'],
                                                       cfg['kernel_inh_delay'],
@@ -99,10 +98,9 @@ class LGN():
                                                       cfg['start_col'], 
                                                       cfg['start_row'],
                                                       map_to_src=mapf.row_major,
-                                                      row_bits=self.width)
+                                                      pop_width=width)
             
-            tmp, inh[:] = conn_krn.full_kernel_connector(self.width,
-                                                         self.height,
+            tmp, inh[:] = conn_krn.full_kernel_connector(width, height,
                                                          self.split_cs[INH],
                                                          cfg['kernel_exc_delay'],
                                                          cfg['kernel_inh_delay'],
@@ -111,65 +109,13 @@ class LGN():
                                                          cfg['start_col'], 
                                                          cfg['start_row'],
                                                          map_to_src=mapf.row_major,
-                                                         row_bits=self.width,
+                                                         pop_width=width,
                                                          remove_inh_only=False)
-
-            conns['split'] = [exc, inh]
-
-        exc, inh = conn_krn.full_kernel_connector(self.width2,
-                                                  self.height2,
-                                                  self.split_cs[EXC],
-                                                  cfg['kernel_exc_delay'],
-                                                  cfg['kernel_inh_delay'],
-                                                  cfg['col_step'], 
-                                                  cfg['row_step'],
-                                                  cfg['start_col'], 
-                                                  cfg['start_row'],
-                                                  map_to_src=mapf.row_major,
-                                                  row_bits=self.width2)
-        
-        tmp[:], inh[:] = conn_krn.full_kernel_connector(self.width2,
-                                                        self.height2,
-                                                        self.split_cs[INH],
-                                                        cfg['kernel_exc_delay'],
-                                                        cfg['kernel_inh_delay'],
-                                                        cfg['col_step'], 
-                                                        cfg['row_step'],
-                                                        cfg['start_col'], 
-                                                        cfg['start_row'],
-                                                        map_to_src=mapf.row_major,
-                                                        row_bits=self.width2,
-                                                        remove_inh_only=False)
-        conns['split2'] = [exc, inh]
-        
-        exc, inh = conn_krn.full_kernel_connector(self.width4,
-                                                  self.height4,
-                                                  self.split_cs[EXC],
-                                                  cfg['kernel_exc_delay'],
-                                                  cfg['kernel_inh_delay'],
-                                                  cfg['col_step'], 
-                                                  cfg['row_step'],
-                                                  cfg['start_col'], 
-                                                  cfg['start_row'],
-                                                  map_to_src=mapf.row_major,
-                                                  row_bits=self.width4)
-        
-        tmp[:], inh[:] = conn_krn.full_kernel_connector(self.width4,
-                                                        self.height4,
-                                                        self.split_cs[INH],
-                                                        cfg['kernel_exc_delay'],
-                                                        cfg['kernel_inh_delay'],
-                                                        cfg['col_step'], 
-                                                        cfg['row_step'],
-                                                        cfg['start_col'], 
-                                                        cfg['start_row'],
-                                                        map_to_src=mapf.row_major,
-                                                        row_bits=self.width4,
-                                                        remove_inh_only=False)
-        conns['split4'] = [exc, inh]
+            conns[k] = {EXC: exc, INH: inh}
 
         self.conns = conns
-        
+
+
     def build_populations(self):
         sim = self.sim
         cfg = self.cfg
@@ -182,13 +128,7 @@ class LGN():
         for c in self.channels:
             pops[c] = {}
             for k in self.retina.get_output_keys():
-                # print('lgn - populations - key: %s'%k)
-                if k == 'cs4':
-                    popsize = self.size4
-                elif k == 'cs2':
-                    popsize = self.size2
-                else:
-                    popsize = self.size
+                popsize = self.pop_size(k)
 
                 pops[c][k] = {}
                 pops[c][k]['inter']   = sim.Population(popsize,
@@ -227,13 +167,7 @@ class LGN():
                                                       self.pops[c][k]['inter'], o2o,
                                                       target='excitatory')
 
-                if k == 'cs4':
-                    split = self.conns['split4']
-                elif k == 'cs2':
-                    split = self.conns['split2']
-                else:
-                    split = self.conns['split']
-
+                split = self.conns[k]
                 flc = sim.FromListConnector(split[EXC])
                 projs[c][k]['exc'] = sim.Projection(self.retina.pops[c][k]['ganglion'], 
                                                     self.pops[c][k]['output'], flc,

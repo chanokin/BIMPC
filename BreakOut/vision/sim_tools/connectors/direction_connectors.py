@@ -1,6 +1,7 @@
 from ..common import *
 import numpy as np
 import sys
+import inspect
 
 def unique_rows(a):
     # print(len(a), len(a[0]))
@@ -33,19 +34,19 @@ def direction_connection_angle(direction, max_angle, max_dist,
     dang = 0
     if   direction == 'left2right' or direction == 'E':
         dang = 0
-    elif direction == 'bl2tr'      or direction == 'NE':
+    elif direction == 'bl2tr'      or direction == 'SE':
         dang = 45
-    elif direction == 'bottom2top' or direction == 'N':
+    elif direction == 'bottom2top' or direction == 'S':
         dang = 90
-    elif direction == 'br2tl'      or direction == 'NW':
+    elif direction == 'br2tl'      or direction == 'SW':
         dang = 135
     elif direction == 'right2left' or direction == 'W':
         dang = 180
-    elif direction == 'tr2bl'      or direction == 'SW':
+    elif direction == 'tr2bl'      or direction == 'NW':
         dang = 225
-    elif direction == 'top2bottom' or direction == 'S':
+    elif direction == 'top2bottom' or direction == 'N':
         dang = 270
-    elif direction == 'tl2br'      or direction == 'SE':
+    elif direction == 'tl2br'      or direction == 'NE':
         dang = 315
     else:
         raise Exception("Not a valid direction - %s -"%(direction))
@@ -99,7 +100,7 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
                                       delay_func=lambda d: d, 
                                       weight_func=lambda d, a, w: w,
                                       weight=2., inh_weight_mult=1.5,
-                                      row_bits=8,
+                                      row_bits=8, 
                                      ):
     deg2rad = np.pi/180.
 
@@ -112,7 +113,8 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
     dst_y = subsamp_size(start, start_y, step)
     dst_x = subsamp_size(start, start_x, step)
     dst = int(dst_y*dst_width + dst_x)
-
+    ndist_args = len(inspect.getargspec(delay_func).args)
+    
     for a in range(-max_angle, max_angle + 1):
         for d in range(1, max_dist+1):
             new_c = True
@@ -120,8 +122,13 @@ def direction_connection_angle_helper(dang, max_angle, max_dist,
             xd = int(np.round( d*np.cos((a+dang+180)*deg2rad) ))
             yd = int(np.round( d*np.sin((a+dang+180)*deg2rad) ))
 
-            delay = delay_func( np.abs(xd) + np.abs(yd) )
-            
+            if ndist_args == 1:
+                delay = delay_func(np.abs(xd) + np.abs(yd))
+            elif ndist_args == 3:
+                delay = delay_func(d, np.abs(xd), np.abs(yd))
+            else:
+                 delay = d
+
             if xd in coord:
                 if yd in coord[xd]:
                     new_c = False

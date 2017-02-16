@@ -79,9 +79,9 @@ defaults_retina = {
                              
                    'direction': {'keys': [
                                           'E', 
-                                          # 'W',
-                                          # 'N', 
-                                          # 'S',
+                                          'W',
+                                          'N', 
+                                          'S',
                                           #'NW', 'SW', 'NE', 'SE',
                                           #'east', 'south', 'west', 'north',
                                           #'south east', 'south west', 

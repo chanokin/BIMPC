@@ -14,6 +14,11 @@ if 'direction' in ret_conf: del ret_conf['direction']
 ### (optional) to disable orientation sensing
 if 'gabor' in ret_conf: del ret_conf['gabor']
 
+### fix input mapping for Keepie-Uppie
+from sim_tools.connectors.mapping_funcs import row_col_to_input_breakout
+ret_conf['input_mapping_func'] = row_col_to_input_breakout
+ret_conf['row_bits'] = 8
+
 ### increase max_delay for motion sensing
 sim.setup(timestep=1., max_delay=144., min_delay=1.)
 
