@@ -55,7 +55,7 @@ defaults_retina = {
                    'corr_w2s_mult': 2.,
                    'row_step': 1, 'col_step': 1,
                    'start_row': 0, 'start_col': 0,
-                   # 'gabor': {'num_divs': 4., 'freq': 5., 'std_dev': 5., 'width': 7,
+                   # 'gabor': {'num_divs': 2., 'freq': 5., 'std_dev': 5., 'width': 7,
                              # 'step': 3, 'start': 0},
 
                    'cs': {'std_dev': 0.8, 'sd_mult': 6.7, 'width': 3, 

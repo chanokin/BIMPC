@@ -6,7 +6,7 @@ def full_kernel_connector(pre_layer_width, pre_layer_height, kernel,
                           col_step=1, row_step=1, 
                           col_start=0, row_start=0, 
                           map_to_src=row_col_to_input,
-                          row_bits=8,
+                          row_bits=8, pop_width=None,
                           on_path=True,
                           min_w = 0.001, remove_inh_only=True):
     '''Create connection list based on a convolution kernel, the format
@@ -24,6 +24,8 @@ def full_kernel_connector(pre_layer_width, pre_layer_height, kernel,
        :return exc_conns: Excitatory connections list
        :return inh_conns: Inhibitory connections list
     '''
+    row_bits = row_bits if pop_width is None else pop_width
+    
     layer_width, layer_height = pre_layer_width, pre_layer_height
     exc_conns = []
     inh_conns = []

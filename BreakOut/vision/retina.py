@@ -43,39 +43,26 @@ class Retina():
         self.shapes = {}
         ### // <- integer div
         self.css = ['cs', 'cs2', 'cs4']
-        w = subsamp_size(cfg['cs']['start'], width,  cfg['cs']['step'])
-        h = subsamp_size(cfg['cs']['start'], height, cfg['cs']['step'])
-        self.shapes['cs'] = {'width': w, 'height': h, 'size': w*h,
-                             'step':  cfg['cs']['step'],
-                             'start': cfg['cs']['start']}
+        self.shapes['cs']  = self.gen_shape(width, height, cfg['cs']['step'],
+                                            cfg['cs']['start'])
                              
-        w = subsamp_size(cfg['cs_half']['start'], width,  cfg['cs_half']['step'])
-        h = subsamp_size(cfg['cs_half']['start'], height, cfg['cs_half']['step'])
-        self.shapes['cs2'] = {'width': w, 'height': h, 'size': w*h,
-                              'step':  cfg['cs_half']['step'],
-                              'start': cfg['cs_half']['start']}
+        self.shapes['cs2'] = self.gen_shape(width, height, 
+                                            cfg['cs_half']['step'],
+                                            cfg['cs_half']['start'])
 
-        w = subsamp_size(cfg['cs_quart']['start'], width,  cfg['cs_quart']['step'])
-        h = subsamp_size(cfg['cs_quart']['start'], height, cfg['cs_quart']['step'])
-        self.shapes['cs4'] = {'width': w, 'height': h, 'size': w*h,
-                              'step':  cfg['cs_quart']['step'],
-                              'start': cfg['cs_quart']['start']}
+        self.shapes['cs4'] = self.gen_shape(width, height, 
+                                            cfg['cs_quart']['step'],
+                                            cfg['cs_quart']['start'])
         
         if 'direction' in cfg:
-            w = subsamp_size(cfg['direction']['start'], width,  
-                             cfg['direction']['step'])
-            h = subsamp_size(cfg['direction']['start'], height, 
-                             cfg['direction']['step'])
-            self.shapes['dir'] = {'width': w, 'height': h, 'size': w*h,
-                                  'step':  cfg['direction']['step'],
-                                  'start': cfg['direction']['start']}
+            self.shapes['dir'] = self.gen_shape(width, height, 
+                                                cfg['direction']['step'],
+                                                cfg['direction']['start'])
         
         if 'gabor' in cfg and cfg['gabor']:
-            w = subsamp_size(cfg['gabor']['start'], width,  cfg['gabor']['step'])
-            h = subsamp_size(cfg['gabor']['start'], height, cfg['gabor']['step'])
-            self.shapes['gabor'] = {'width': w, 'height': h, 'size': w*h,
-                                    'step': cfg['gabor']['step'],
-                                    'start': cfg['gabor']['start']}
+            self.shapes['gabor'] = self.gen_shape(width, height, 
+                                                  cfg['gabor']['step'],
+                                                  cfg['gabor']['start'])
                                 
             self.ang_div = deg2rad(180./cfg['gabor']['num_divs'])
             self.angles = [i*self.ang_div for i in range(cfg['gabor']['num_divs'])]
@@ -111,7 +98,37 @@ class Retina():
         print("\t\tdone!")
     
     
+    def gen_shape(self, width, height, step, start):
+        w = subsamp_size(start, width,  step)
+        h = subsamp_size(start, height,  step)
+        sh = {'width': w, 'height': h, 'size': w*h,
+              'start': start, 'step': step}
+        return sh
     
+    def _right_key(self, key):
+        if 'gabor' in key:
+            return 'gabor'
+        elif 'dir' in key:
+            return 'dir'
+        else:
+            return key
+        
+    def pop_size(self, key):
+        return self.shapes[self._right_key(key)]['size']
+    
+    def pop_width(self, key):
+        return self.shapes[self._right_key(key)]['width']
+    
+    def pop_height(self, key):
+        return self.shapes[self._right_key(key)]['height']
+
+    def sample_step(self, key):
+        return self.shapes[self._right_key(key)]['step']
+    
+    def sample_start(self, key):
+        return self.shapes[self._right_key(key)]['start']
+
+
     def get_output_keys(self):
         return [k for k in self.pops['on'] if k is not 'cam_inter']
     
@@ -169,14 +186,14 @@ class Retina():
         for c in self.conns:
             for k in css:
                 on_path = (c == 'on')
+                step = self.sample_step(k)
+                start = self.sample_start(k)
                 self.conns[c][k] = krn_conn( self.width, self.height, 
                                              self.kernels[k],
                                              exc_delay=cfg['kernel_exc_delay'],
                                              inh_delay=cfg['kernel_inh_delay'],
-                                             col_step=self.shapes[k]['step'], 
-                                             row_step=self.shapes[k]['step'],
-                                             col_start=self.shapes[k]['start'], 
-                                             row_start=self.shapes[k]['start'], 
+                                             col_step=step, row_step=step,
+                                             col_start=start, row_start=start, 
                                              map_to_src=mapping_f,
                                              row_bits=cfg['row_bits'],
                                              on_path=on_path )
@@ -186,14 +203,14 @@ class Retina():
                 for k in self.gab.keys():
                     krn = self.gab[k]
                     on_path = (c == 'on')
+                    step = self.sample_step(k)
+                    start = self.sample_start(k)
                     self.conns[c][k] = krn_conn(self.width, self.height, 
                                                 krn,
                                                 cfg['kernel_exc_delay'],
                                                 cfg['kernel_inh_delay'],
-                                                col_step=self.shapes['gabor']['step'], 
-                                                row_step=self.shapes['gabor']['step'],
-                                                col_start=self.shapes['gabor']['start'], 
-                                                row_start=self.shapes['gabor']['start'], 
+                                                col_step=step, row_step=step,
+                                                col_start=start, row_start=start, 
                                                 map_to_src=mapping_f,
                                                 row_bits=cfg['row_bits'],
                                                 on_path=on_path)
@@ -202,6 +219,8 @@ class Retina():
         if 'direction' in cfg:
             for dk in cfg['direction']['keys']:
                 k = "%s_dir"%dk
+                step = self.sample_step(k)
+                start = self.sample_start(k)
                 if '2' in dk  or  dk.isupper():
                     dir_cn = dir_conn.direction_connection_angle
                     conns = dir_cn(dk, 
@@ -209,8 +228,7 @@ class Retina():
                                    cfg['direction']['dist'], 
                                    self.width, self.height, 
                                    mapping_f,
-                                   start=self.shapes['dir']['start'], 
-                                   step=self.shapes['dir']['step'],
+                                   start=start, step=step,
                                    exc_delay=cfg['kernel_exc_delay'],
                                    inh_delay=cfg['kernel_inh_delay'],
                                    delay_func=cfg['direction']['delay_func'], 
@@ -248,20 +266,22 @@ class Retina():
         #bipolar to interneuron 
         self.extra_conns['inter'] = {}
         for k in css:
-            
-            conns = conn_std.one2one(self.shapes[k]['size'],
+            size = self.pop_size(k)
+            conns = conn_std.one2one(size,
                                      weight=cfg['inhw'], 
                                      delay=cfg['kernel_inh_delay'])
             self.extra_conns['inter'][k] = conns
         
         if 'gabor' in cfg:
-            conns = conn_std.one2one(self.shapes['gabor']['size'],
+            size = self.pop_size('gabor')
+            conns = conn_std.one2one(size,
                                      weight=cfg['inhw'], 
                                      delay=cfg['kernel_inh_delay'])
             self.extra_conns['inter']['gabor'] = conns
         
         if 'direction' in cfg:
-            conns = conn_std.one2one(self.shapes['dir']['size'],
+            size = self.pop_size('dir')
+            conns = conn_std.one2one(size,
                                      weight=cfg['inhw'], 
                                      delay=cfg['kernel_inh_delay'])
             self.extra_conns['inter']['dir'] = conns
@@ -269,33 +289,33 @@ class Retina():
         #bipolar/interneuron to ganglion (use row-major mapping)
         self.extra_conns['ganglion'] = {}
         for k in css:
-            conns = conn_krn.full_kernel_connector(self.shapes[k]['width'], 
-                                                   self.shapes[k]['height'],
+            w, h = self.pop_width(k), self.pop_height(k)
+            conns = conn_krn.full_kernel_connector(w, h,
                                                    self.corr['cs'],
                                                    cfg['kernel_exc_delay'],
                                                    cfg['kernel_inh_delay'],
                                                    map_to_src=mapf.row_major,
-                                                   row_bits=self.shapes[k]['width'])
+                                                   pop_width=w)
             self.extra_conns['ganglion'][k] = conns
 
         if 'gabor' in cfg:
-            conns = conn_krn.full_kernel_connector(self.shapes['gabor']['width'], 
-                                                   self.shapes['gabor']['height'],
+            w, h = self.pop_width('gabor'), self.pop_height('gabor')
+            conns = conn_krn.full_kernel_connector(w, h,
                                                    self.corr['cs'],
                                                    cfg['kernel_exc_delay'],
                                                    cfg['kernel_inh_delay'],
                                                    map_to_src=mapf.row_major,
-                                                   row_bits=self.shapes['gabor']['width'])
+                                                   pop_width=w)
             self.extra_conns['ganglion']['gabor'] = conns
         
         if 'direction' in cfg:
-            conns = conn_krn.full_kernel_connector(self.shapes['dir']['width'], 
-                                                   self.shapes['dir']['height'],
+            w, h = self.pop_width('dir'), self.pop_height('dir')
+            conns = conn_krn.full_kernel_connector(w, h,
                                                    self.corr['cs'],
                                                    cfg['kernel_exc_delay'],
                                                    cfg['kernel_inh_delay'],
                                                    map_to_src=mapf.row_major,
-                                                   row_bits=self.shapes['dir']['width'])
+                                                   pop_width=w)
             self.extra_conns['ganglion']['dir'] = conns
         
 
@@ -337,16 +357,7 @@ class Retina():
 
         for k in self.conns.keys():
             for p in self.conns[k].keys():
-                if 'cs' in p:
-                    filter_size = self.shapes[p]['size']
-                elif 'gabor' in p:
-                    filter_size = self.shapes['gabor']['size']
-                elif 'dir' in p:
-                    filter_size = self.shapes['dir']['size']
-                else:
-                    raise Exception("In Retina-build_populations: can't ",
-                                    "find population size")
-
+                filter_size = self.pop_size(p)
                 self.pops[k][p] = {'bipolar': sim.Population(filter_size,
                                                              exc_cell, exc_parm,
                                                              label='Retina: bipolar_%s_%s'%(k, p)),
@@ -368,7 +379,6 @@ class Retina():
                     self.pops[k][p]['bipolar'].record()
                     self.pops[k][p]['inter'].record()
                     self.pops[k][p]['ganglion'].record()
-
 
     def build_projections(self):
         self.projs = {}
@@ -421,7 +431,8 @@ class Retina():
                     self.projs[k][p]['cam2bip'] = [exc, inh]
                 else:
                     self.projs[k][p]['cam2bip'] = [exc]
-                    
+                
+                
                 if 'cs' in p:
                     inter  = self.extra_conns['inter'][p]
                     cs_exc = self.extra_conns['ganglion'][p][EXC]
