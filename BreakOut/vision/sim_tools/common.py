@@ -79,3 +79,8 @@ def seed_rand(seed=None):
 
 def subsamp_size(start, end, step):
     return ( (end - start - 1)//step ) + 1
+
+def print_debug(txt):
+    print("------------------------------------------------------------")
+    print(txt)
+    print("------------------------------------------------------------")

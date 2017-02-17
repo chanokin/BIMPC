@@ -145,7 +145,8 @@ def probability_connector(num_src, num_dst, prob, weight, delay,
             delays = np.random.randint(delay, max_delay, size=num_conns)
 
         conns += [(src, post[i], weights[i], delays[i]) for i in range(num_conns)]
-
+    
+    return conns
  
 ######### given neuron id lists do connections
 
@@ -204,16 +205,17 @@ def list_probability_connector(src_list, dst_list, prob, weight, delay,
     num_dst = len(dst_list)
     dst_arr = np.array(dst_list)
     conns = []
-    for src in src_list:
+    for src_i in range(len(src_list)):
+        src = src_list[src_i]
         np.random.seed(seed)
         dice_roll = np.random.random(size=num_dst)
-        post = dst_arr( np.where(dice_roll <= prob) )
-        if num_src == num_post: #no self-connections
+        post = dst_arr[ np.where(dice_roll <= prob) ]
+        if num_src == num_dst: #no self-connections
             post = np.array([post[i] for i in range(post.size) if src != post[i]])
         num_conns = post.size
 
         if isinstance(weight, list) or isinstance(weight, np.ndarray):
-            weights = np.ones_like(post)*weight[src]
+            weights = np.ones_like(post)*weight[src_i]
         elif weight_std_dev is None:
             weights = np.ones_like(post)*weight
         else:

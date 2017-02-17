@@ -52,19 +52,19 @@ class V1():
         ### COLUMNS (input interface)  ---------------------------------
         prev_step = 0
         curr_col = 0
-        simple = {}
+        units = {}
         sys.stdout.write("\t\tSimple layer")
         sys.stdout.flush()
 
         for r in range(in_start, self.width, in_step):
-            simple[r] = {}
+            units[r] = {}
             for c in range(in_start, self.height, in_step):
                 coords = [r, c]
 
                 mc = self.column(self.sim, self.lgn, 
                                  self.width, self.height, 
                                  coords, self.learn_on, cfg=cfg)
-                simple[r][c] = mc
+                units[r][c] = mc
                 
                 curr_col += 1
                 curr_step = int(curr_col*cols_to_steps)
@@ -74,16 +74,9 @@ class V1():
                     sys.stdout.flush()
                 
         sys.stdout.write("\n")
-        self.simple = simple
-        self.num_simple = cfg['num_input_wta']*self.width*self.height
+        self.units = units
 
-    def build_complex(self):
-        pass
 
     def connect_units(self):
         pass
 
-    def liquid_in_units(self, r, c, keys_r, keys_c):
-        return [self.simple[keys_r[in_r]][keys_c[in_c]] \
-                            for in_r in range(r-1, r+1) \
-                            for in_c in range(c-1, c+1)]

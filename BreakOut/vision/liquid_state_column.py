@@ -90,26 +90,6 @@ class V1MultiColumn(BaseColumn):
         self.pops = pops
     
     
-    def get_synapse_dynamics(self):
-        if not self.learn_on:
-            return None
-            
-        cfg = self.cfg['stdp']
-        sim = self.sim
-        
-        stdp_model = sim.STDPMechanism(
-            timing_dependence = sim.SpikePairRule(tau_plus=cfg['tau_plus'], 
-                                                  tau_minus=cfg['tau_minus']),
-            weight_dependence = sim.AdditiveWeightDependence(w_min=cfg['w_min'], 
-                                                             w_max=cfg['w_max'], 
-                                                             A_plus=cfg['a_plus'], 
-                                                             A_minus=cfg['a_minus']),
-        )
-        syn_dyn = sim.SynapseDynamics(slow=stdp_model)
-        
-        return syn_dyn
-    
-    
     def build_projections(self):
         sim = self.sim
         cfg = self.cfg

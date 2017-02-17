@@ -207,7 +207,7 @@ relay.record()
 sim.Projection(cam, relay, sim.OneToOneConnector(weights=2.))
 
 cfg = {'record': {'voltages': False, 
-                  'spikes': True,
+                  'spikes': False,
                  },
        'row_bits': 5,
       }
@@ -215,23 +215,10 @@ mode = dvs_modes[MERGED]
 retina = Retina(sim, relay, img_w, img_h, mode, cfg=cfg)
 retina.pops['on']['cam_inter'].record()
 retina.pops['off']['cam_inter'].record()
-# print("RETINA SIZES --------------------------------------------")
-# for k in retina.shapes:
-    # print(k)
-    # print(retina.shapes[k])
-# print("RETINA CONNECTORS +++++++++++++++++++++++++++++++++++++++++++++")
-# for c in retina.conns:
-    # for k in retina.conns[c]:
-        # print(c, k)
-        # if 'dir' in k:
-            # for conn in retina.conns[c][k]:
-                # for ccc in conn:
-                    # print(ccc)
-# sys.exit()
 
 if do_lgn:
     cfg = {'record': {'voltages': False, 
-                      'spikes': True,
+                      'spikes': False,
                      },
       }
     lgn = LGN(sim, retina, cfg=cfg)
@@ -261,41 +248,43 @@ inter_cam_spks['off'] = get_spikes(retina.pops['off']['cam_inter'],
 
 print("Trying to get output spikes")
 out_spks = {}
-print("\tFor Retina")
-for k in retina.pops.keys():
-    out_spks[k] = {}
-    for p in retina.pops[k].keys():
-        out_spks[k][p] = {}
-        if isinstance(retina.pops[k][p], dict):
-            for t in retina.pops[k][p].keys():
-                key = "retina_%s__%s__%s"%(k, p, t)
-                out_spks[k][p][t] = get_spikes(retina.pops[k][p][t], key)
-# 
+# print("\tFor Retina")
+# for k in retina.pops.keys():
+    # out_spks[k] = {}
+    # for p in retina.pops[k].keys():
+        # out_spks[k][p] = {}
+        # if isinstance(retina.pops[k][p], dict):
+            # for t in retina.pops[k][p].keys():
+                # key = "retina_%s__%s__%s"%(k, p, t)
+                # out_spks[k][p][t] = get_spikes(retina.pops[k][p][t], key)
+
 if do_lgn:
     lgn_spks = {}
-    print("\tFor LGN")
-    
-    for c in lgn.pops.keys():
-        lgn_spks[c] = {}
-        for k in lgn.pops[c].keys():
-            key = "lgn_%s_%s"%(c,k)
-            lgn_spks[c][k] = get_spikes(lgn.pops[c][k]['output'], key)
+    # print("\tFor LGN")
+    # 
+    # for c in lgn.pops.keys():
+        # lgn_spks[c] = {}
+        # for k in lgn.pops[c].keys():
+            # key = "lgn_%s_%s"%(c,k)
+            # lgn_spks[c][k] = get_spikes(lgn.pops[c][k]['output'], key)
             
 
 if do_v1:
-    v1_spks = {}
-    v1_inh = {}
+    v1_input = {}
+    v1_output = {}
     print("\tFor V1 simples")
-    for r in v1.simple:
-        v1_spks[r] = {}
-        v1_inh[r] = {}
-        for c in v1.simple[r]:
-            key = "v1_spl_%s_%s"%(r, c)
-            v1_spks[r][c] = get_spikes(v1.simple[r][c].pops['simple'], key)
-            key = "v1_inh_%s_%s"%(r, c)
-            v1_inh[r][c]  = get_spikes(v1.simple[r][c].pops['wta_inh'], key)
+    for r in v1.units:
+        v1_input[r] = {}
+        v1_output[r] = {}
+        for c in v1.units[r]:
+            key = "v1_units_input_pop_%s_%s"%(r, c)
+            v1_input[r][c] = get_spikes(v1.units[r][c].input_pop, key)
 
-    pickle.dump(v1_spks, open('v1_spikes.pickle', 'w'))
+            key = "v1_units_output_pop_%s_%s"%(r, c)
+            v1_output[r][c] = get_spikes(v1.units[r][c].output_pop, key)
+
+    pickle.dump(v1_input, open('v1_input_spikes.pickle', 'w'))
+    pickle.dump(v1_input, open('v1_output_spikes.pickle', 'w'))
 
 sim.end()
 
@@ -444,30 +433,35 @@ if do_lgn and 'on' in lgn_spks:
 # In[ ]:
 
 if do_v1:
-    for r in v1_spks:
-        for c in v1_spks[r]:
+    for r in v1_input:
+        for c in v1_input[r]:
             
             # print(v1_spks[r][c])
-            if not v1_spks[r][c]:
+            if not v1_input[r][c]:
                 continue
                 
             fig = plt.figure()#figsize=(16, 18))
-            plot_output_spikes(v1_spks[r][c], color='b')
+            plot_output_spikes(v1_input[r][c], color='b')
             plt.suptitle("V1 simple (%d, %d)"%(r, c))
             plt.draw()
             plt.savefig(os.path.join(output_dir, "v1_simple_(%d_%d)_spikes.png"%(r, c)),
                         dpi=150)
             plt.close()
 
+    v1_in_w0 = {}
+    v1_in_w1 = {}
+    print("\tFor V1 simples")
+    for r in v1.units:
+        v1_in_w0[r] = {}
+        v1_in_w1[r] = {}
+        for c in v1.units[r]:
+            v1_in_w0[r][c] = v1.units[r][c].get_input_weights(get_initial=True)
+            v1_in_w1[r][c] = v1.units[r][c].get_input_weights(get_initial=False)
+            print("WEIGHT CHANGE IN %d, %d"%(r, c))
+            print(np.sum((v1_in_w0 - v1_in_w1)**2))
 
-            fig = plt.figure()#figsize=(16, 18))
-            plot_output_spikes(v1_inh[r][c], color='r')
-            plt.suptitle("V1 inh (%d, %d)"%(r, c))
-            plt.draw()
-            plt.savefig(os.path.join(output_dir, "v1_inh_(%d_%d)_spikes.png"%(r, c)), 
-                        dpi=150)
-            plt.close()
-
+    pickle.dump(v1_in_w0, open("v1_in_w0.pickle", "w"))
+    pickle.dump(v1_in_w1, open("v1_in_w1.pickle", "w"))
 # In[ ]:
 
 
