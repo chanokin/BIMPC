@@ -24,6 +24,23 @@ if sim.__name__ == 'pyNN.spiNNaker':
 fig_path = './wta_figs'
 # In[2]:
 
+def connect_neighbours(num_neurons, weight, delay):
+    indices = range(num_neurons)
+
+    conns = []
+    conns.append( (indices[0], indices[-1], weight, delay) )
+    conns.append( (indices[0], indices[1],  weight, delay) )
+
+    for i in indices[1: -2]:
+        conns.append( (i, i-1, weight, delay) )
+        conns.append( (i, i+1, weight, delay) )
+
+    conns.append( (indices[-1], indices[-2], weight, delay) )
+    conns.append( (indices[-1], indices[0],  weight, delay) )
+    
+    return conns
+    
+
 def remove_rand(patt, num_remove, num_neurons, seed):
     np.random.seed(seed)
     rand_del = np.random.choice(range(num_in), size=num_del, replace=False)
@@ -97,8 +114,8 @@ def plot_weight_diff(start_w, new_w, a_plus, a_minus, w2s):
 
 # In[3]:
 
-num_in = 50
-num_hid = 70
+num_in = 70
+num_hid = 100
 
 num_del = num_in*0.5
 
@@ -188,7 +205,7 @@ w_in2hid = np.random.normal(loc=start_w, size=(num_in*num_hid))
 
 hid2inh, inh2hid = std_conn.wta_interneuron(num_hid, ff_weight=w2s, fb_weight=-w2s*1.)
 
-
+hid2hid = connect_neighbours(num_hid, w2s*0.2, delay=2)
 # In[5]:
 
 cell = sim.IF_curr_exp
@@ -197,9 +214,9 @@ def params(i_offset):
     exc_params = { 'cm': 0.35,  # nF
                    'i_offset': i_offset,
                    'tau_m': 5.5,
-                   'tau_refrac': 4.0,
+                   'tau_refrac': 3.0,
                    'tau_syn_E': 2.,
-                   'tau_syn_I': 4.,
+                   'tau_syn_I': 2.,
                    'v_reset': -70.6,
                    'v_rest': -65.0,
                    'v_thresh': -50.
@@ -219,7 +236,7 @@ def params(i_offset):
                    'i_offset': i_offset,
                    'tau_m': 5.5,
                    'tau_refrac': 1.0,
-                   'tau_syn_E': 7.,
+                   'tau_syn_E': 3.,
                    'tau_syn_I': 1.,
                    'v_reset': -70.0,
                    'v_rest': -65.0,
@@ -254,8 +271,8 @@ for cycle in range(num_cycles):
     tau_plus = 16.8
     tau_minus = 33.7
     w_min = 0.
-    w_max = w2s*0.4
-    a_plus = 0.13125
+    w_max = w2s*0.65
+    a_plus = 0.013125
     a_minus = 0.85*a_plus
     
     in2hid = std_conn.all2all(num_in, num_hid, ws)
@@ -286,6 +303,9 @@ for cycle in range(num_cycles):
                                   target='excitatory', synapse_dynamics=syn_dyn)
     hid2inh_proj = sim.Projection(hid_pop, inh_pop, sim.FromListConnector(hid2inh),
                                   target='excitatory')
+    hid2hid_proj = sim.Projection(hid_pop, hid_pop, sim.FromListConnector(hid2hid),
+                                  target='excitatory')
+
     # inh2hid_proj = sim.Projection(inh_pop, hid_pop, sim.FromListConnector(inh2hid),
                                   # target='inhibitory')
 
