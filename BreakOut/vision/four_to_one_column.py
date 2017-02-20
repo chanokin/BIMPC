@@ -208,6 +208,10 @@ class V1FourToOneColumn(BaseColumn):
             ws[ch] = {}
             for pop in self.input_conns[ch]:
                 ws[ch][pop] = {}
+                print("============================================")
+                print("BEFORE simulation!")
+                print("%s CHANNEL --- %s POPULATION"%(ch, pop))
+
                 for cn_k in self.input_conns[ch][pop]:
                     dst_lyr, dst_pop = self.decode_in_conn_key(cn_k)
                     pre_size  = self.lgn.pop_size(pop)
@@ -228,6 +232,10 @@ class V1FourToOneColumn(BaseColumn):
                 ws[ch] = {}
                 for pop in self.input_projs[ch]:
                     ws[ch][pop] = {}
+                    print("============================================")
+                    print("after simulation!")
+                    print("%s CHANNEL --- %s POPULATION"%(ch, pop))
+                    
                     for cn_k in self.input_projs[ch][pop]:
                         w = self.input_projs[ch][pop][cn_k].\
                                               getWeights(format='array')

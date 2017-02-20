@@ -4,12 +4,16 @@ from spynnaker_external_devices_plugin.pyNN.connections.\
 import spynnaker_external_devices_plugin.pyNN as ex
 import spinn_breakout
 from vision.sim_tools.connectors.standard_connectors import breakout_one2one
+from vision.sim_tools.connectors.mapping_funcs import row_col_to_input_breakout
+from vision.retina import Retina, dvs_modes, MERGED
+from vision import default_config
 import pylab as plt
 import pickle
+import copy
 
 RECORD = False
-# TESTING = True
-TESTING = False
+TESTING = True
+# TESTING = False
 # Game resolution, coords layout in packet
 if TESTING:
     X_RESOLUTION = 40
@@ -28,7 +32,9 @@ else:
 UDP_PORT = 19993#17893
 
 # Setup pyNN simulation
-sim.setup(timestep=1.0)
+sim.setup(timestep=1.0, max_delay=144., min_delay=1.)
+if sim.__name__ == 'pyNN.spiNNaker':
+    sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 70)
 
 # Create breakout population and activate live output for it
 breakout_pop = sim.Population(N_NEURON, spinn_breakout.Breakout, {}, label="breakout")
@@ -78,6 +84,27 @@ else:
                                            x_res=X_RESOLUTION, y_res=Y_RESOLUTION,
                                            x_bits=X_BITS, y_bits=Y_BITS)
                         
+#######################
+###   R E T I N A   ###
+#######################
+ret_conf = copy.deepcopy(default_config.defaults_retina)
+### (optional) to disable motion sensing
+if 'direction' in ret_conf: ret_conf['direction'] = False
+### (optional) to disable orientation sensing
+if 'gabor' in ret_conf: ret_conf['gabor'] = False
+ret_conf['input_mapping_func'] = row_col_to_input_breakout
+ret_conf['row_bits'] = 8
+
+ret_conf['record'] = {'voltages': False, 
+                      'spikes': False,
+                     }
+
+
+
+mode = dvs_modes[MERGED]
+retina = Retina(sim, breakout_pop, X_RESOLUTION, Y_RESOLUTION, mode, 
+                cfg=ret_conf)
+
 
 if RECORD:
     sim.run(16000) # ms

@@ -54,7 +54,7 @@ class Retina():
                                             cfg['cs_quart']['step'],
                                             cfg['cs_quart']['start'])
         
-        if 'direction' in cfg:
+        if 'direction' in cfg and cfg['direction']:
             self.shapes['dir'] = self.gen_shape(width, height, 
                                                 cfg['direction']['step'],
                                                 cfg['direction']['start'])
@@ -216,7 +216,8 @@ class Retina():
                                                 on_path=on_path)
 
         
-        if 'direction' in cfg:
+        if 'direction' in cfg and cfg['direction']:
+            # print_debug('attempting to build direction connectors')
             for dk in cfg['direction']['keys']:
                 k = "%s_dir"%dk
                 step = self.sample_step(k)
@@ -272,14 +273,15 @@ class Retina():
                                      delay=cfg['kernel_inh_delay'])
             self.extra_conns['inter'][k] = conns
         
-        if 'gabor' in cfg:
+        if 'gabor' in cfg and cfg['gabor']:
             size = self.pop_size('gabor')
             conns = conn_std.one2one(size,
                                      weight=cfg['inhw'], 
                                      delay=cfg['kernel_inh_delay'])
             self.extra_conns['inter']['gabor'] = conns
         
-        if 'direction' in cfg:
+        if 'direction' in cfg and cfg['direction']:
+            # print_debug('attempting to build direction EXTRA connectors')
             size = self.pop_size('dir')
             conns = conn_std.one2one(size,
                                      weight=cfg['inhw'], 
@@ -298,7 +300,7 @@ class Retina():
                                                    pop_width=w)
             self.extra_conns['ganglion'][k] = conns
 
-        if 'gabor' in cfg:
+        if 'gabor' in cfg and cfg['gabor']:
             w, h = self.pop_width('gabor'), self.pop_height('gabor')
             conns = conn_krn.full_kernel_connector(w, h,
                                                    self.corr['cs'],
@@ -308,7 +310,7 @@ class Retina():
                                                    pop_width=w)
             self.extra_conns['ganglion']['gabor'] = conns
         
-        if 'direction' in cfg:
+        if 'direction' in cfg and cfg['direction']:
             w, h = self.pop_width('dir'), self.pop_height('dir')
             conns = conn_krn.full_kernel_connector(w, h,
                                                    self.corr['cs'],

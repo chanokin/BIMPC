@@ -4,18 +4,18 @@ To instantiate a retina object:
 import copy
 from vision.retina import Retina, dvs_modes, MERGED
 ### MERGED means neuron id = [x|y|p]
-import vision.default_config
+from vision import default_config
 from pyNN import spiNNaker as sim
 
 ### retina configuration
 ret_conf = copy.deepcopy(default_config.defaults_retina)
 ### (optional) to disable motion sensing
-if 'direction' in ret_conf: del ret_conf['direction']
+if 'direction' in ret_conf: ret_conf['direction'] = False
 ### (optional) to disable orientation sensing
-if 'gabor' in ret_conf: del ret_conf['gabor']
+if 'gabor' in ret_conf: ret_conf['gabor'] = False
 
 ### fix input mapping for Keepie-Uppie
-from sim_tools.connectors.mapping_funcs import row_col_to_input_breakout
+from vision.sim_tools.connectors.mapping_funcs import row_col_to_input_breakout
 ret_conf['input_mapping_func'] = row_col_to_input_breakout
 ret_conf['row_bits'] = 8
 

@@ -156,7 +156,7 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
 
 # In[3]:
 do_lgn = True
-do_v1  = True and do_lgn
+do_v1  = False and do_lgn
 learning_on = True
 learning_off = not learning_on
 # img_w, img_h = 160, 128
@@ -187,6 +187,7 @@ spk_sa = output_to_spike_source_array(spks, img_w*img_h*2)
 
 w2s =3.
 sim.setup(timestep=1., max_delay=144., min_delay=1.)
+
 if sim.__name__ == 'pyNN.spiNNaker':
     sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 70)
     
@@ -452,14 +453,15 @@ if do_v1:
     v1_in_w1 = {}
     print("\tFor V1 simples")
     for r in v1.units:
+        
         v1_in_w0[r] = {}
         v1_in_w1[r] = {}
         for c in v1.units[r]:
+            print("WEIGHT CHANGE IN %d, %d"%(r, c))
+            print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
             v1_in_w0[r][c] = v1.units[r][c].get_input_weights(get_initial=True)
             v1_in_w1[r][c] = v1.units[r][c].get_input_weights(get_initial=False)
-            print("WEIGHT CHANGE IN %d, %d"%(r, c))
             print(np.sum((v1_in_w0 - v1_in_w1)**2))
-
     pickle.dump(v1_in_w0, open("v1_in_w0.pickle", "w"))
     pickle.dump(v1_in_w1, open("v1_in_w1.pickle", "w"))
 # In[ ]:

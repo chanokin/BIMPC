@@ -59,7 +59,7 @@ class V1():
         for r in range(in_start, self.width, in_step):
             units[r] = {}
             for c in range(in_start, self.height, in_step):
-                coords = [r, c]
+                coords = {ROW: r, COL: c}
 
                 mc = self.column(self.sim, self.lgn, 
                                  self.width, self.height, 
