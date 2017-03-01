@@ -12,8 +12,8 @@ import pickle
 import copy
 
 RECORD = False
-TESTING = True
-# TESTING = False
+# TESTING = True
+TESTING = False
 # Game resolution, coords layout in packet
 if TESTING:
     X_RESOLUTION = 40
@@ -93,7 +93,7 @@ if 'direction' in ret_conf: ret_conf['direction'] = False
 ### (optional) to disable orientation sensing
 if 'gabor' in ret_conf: ret_conf['gabor'] = False
 ret_conf['input_mapping_func'] = row_col_to_input_breakout
-ret_conf['row_bits'] = 8
+ret_conf['row_bits'] = X_BITS
 
 ret_conf['record'] = {'voltages': False, 
                       'spikes': False,

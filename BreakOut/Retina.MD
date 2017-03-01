@@ -6,6 +6,10 @@ from vision.retina import Retina, dvs_modes, MERGED
 ### MERGED means neuron id = [x|y|p]
 from vision import default_config
 from pyNN import spiNNaker as sim
+from vision.sim_tools.connectors.mapping_funcs import row_col_to_input_breakout
+
+### increase max_delay for motion sensing
+sim.setup(timestep=1., max_delay=144., min_delay=1.)
 
 ### retina configuration
 ret_conf = copy.deepcopy(default_config.defaults_retina)
@@ -14,16 +18,12 @@ if 'direction' in ret_conf: ret_conf['direction'] = False
 ### (optional) to disable orientation sensing
 if 'gabor' in ret_conf: ret_conf['gabor'] = False
 
-### fix input mapping for Keepie-Uppie
-from vision.sim_tools.connectors.mapping_funcs import row_col_to_input_breakout
+### use special input to population mapping for live game
 ret_conf['input_mapping_func'] = row_col_to_input_breakout
 ret_conf['row_bits'] = 8
 
-### increase max_delay for motion sensing
-sim.setup(timestep=1., max_delay=144., min_delay=1.)
-
 mode = dvs_modes[MERGED]
-retina = Retina(sim, camera, cam_width, cam_height,
+retina = Retina(sim, breakout_pop, X_RESOLUTION, Y_RESOLUTION,
                 mode, cfg=ret_conf)
 ```
 

@@ -14,8 +14,8 @@ from vision.spike_tools.pattern import pattern_generator as pat_gen
 from vision.spike_tools.vis import vis_tools as spk_vis
 from vision.sim_tools.connectors import standard_connectors as std_conn
 
-from pyNN import nest as sim
-# from pyNN import spiNNaker as sim
+# from pyNN import nest as sim
+from pyNN import spiNNaker as sim
 
 if sim.__name__ == 'pyNN.spiNNaker':
     import spynnaker_extra_pynn_models as q
@@ -114,10 +114,10 @@ def plot_weight_diff(start_w, new_w, a_plus, a_minus, w2s):
 
 # In[3]:
 
-num_in = 70
-num_hid = 100
+num_in = 10
+num_hid = 50
 
-num_del = num_in*0.5
+num_del = num_in*0.2
 
 t_step = 2.
 start_t = 16.
@@ -193,8 +193,9 @@ plt.close()
 
 # In[4]:
 
-w2s = 2.
-wdiv = float(num_in)*0.2
+w2s = 2.1
+w_inh = -w2s*0.8
+wdiv = float(num_in)*0.5
 start_w = (w2s/wdiv)
 np.random.seed(3951)
 # np.random.seed()
@@ -203,9 +204,9 @@ w_in2hid = np.random.normal(loc=start_w, size=(num_in*num_hid))
 
 # in2hid = std_conn.all2all(num_in, num_hid, w_in2hid)
 
-hid2inh, inh2hid = std_conn.wta_interneuron(num_hid, ff_weight=w2s, fb_weight=-w2s*1.)
+hid2inh, inh2hid = std_conn.wta_interneuron(num_hid, ff_weight=w2s, fb_weight=w_inh)
 
-hid2hid = connect_neighbours(num_hid, w2s*0.2, delay=2)
+hid2hid = connect_neighbours(num_hid, w2s*0.6, delay=2)
 # In[5]:
 
 cell = sim.IF_curr_exp
@@ -247,14 +248,14 @@ def params(i_offset):
 if sim.__name__ == 'pyNN.spiNNaker':
     sim.set_number_of_neurons_per_core(sim.IF_curr_exp, 100)
 
-num_cycles = 100
-plot_every = 10
+num_cycles = 5
+plot_every = 1
 ws = w_in2hid.copy()
 w_history = []
 spikes = {}
 for cycle in range(num_cycles):
     np.random.seed()
-    exc_params, inh_params = params(np.random.random()*0.1)
+    exc_params, inh_params = params(0)#np.random.random()*0.1)
     print("Cycle %d"%cycle)
     sim.setup(timestep=1., min_delay=1., max_delay=14.)
     print("\tpopulations")
@@ -269,26 +270,31 @@ for cycle in range(num_cycles):
     print("\tprojections")
     #from Competitive STDP-based spike pattern learning - Masquelier, 2009
     tau_plus = 16.8
-    tau_minus = 33.7
-    w_min = 0.
-    w_max = w2s*0.65
+    tau_minus = 31.7
+    w_min = w2s*0.0
+    w_max = w2s*0.4
     a_plus = 0.013125
-    a_minus = 0.85*a_plus
+    a_minus = 0.8*a_plus
     
     in2hid = std_conn.all2all(num_in, num_hid, ws)
     if sim.__name__ == 'pyNN.spiNNaker':
-        timing_dep = q.PiecewiseRule(depression_left_time_thresh = 10,
-                                     depression_right_time_thresh = 16,
-                                     potentiation_time_thresh = 6,
-                                     depression_weight_delta_std = 0.1,
-                                     depression_weight_delta_max = 0.1,
-                                     potentiation_weight_delta = 1.)
-        weight_dep = sim.MultiplicativeWeightDependence(w_min=w_min, w_max=w_max, 
-                                                  A_plus=a_plus, A_minus=a_minus,
-                                                  )
-        stdp = sim.STDPMechanism(timing_dependence=timing_dep,
-                                 weight_dependence=weight_dep, mad=False)
-        
+        # timing_dep = q.PiecewiseRule(depression_left_time_thresh = 10,
+                                     # depression_right_time_thresh = 16,
+                                     # potentiation_time_thresh = 6,
+                                     # depression_weight_delta_std = 0.1,
+                                     # depression_weight_delta_max = 0.1,
+                                     # potentiation_weight_delta = 1.)
+        # weight_dep = sim.MultiplicativeWeightDependence(w_min=w_min, w_max=w_max, 
+                                                  # A_plus=a_plus, A_minus=a_minus,
+                                                  # )
+        # stdp = sim.STDPMechanism(timing_dependence=timing_dep,
+                                 # weight_dependence=weight_dep, mad=False)
+        timing_dep = sim.SpikePairRule(tau_plus=tau_plus, 
+                                       tau_minus=tau_minus, nearest=True)
+        weight_dep = sim.AdditiveWeightDependence(w_min=w_min, w_max=w_max, 
+                                                  A_plus=a_plus, A_minus=a_minus)
+        stdp=sim.STDPMechanism(timing_dependence=timing_dep,
+                               weight_dependence=weight_dep)
     else:
         timing_dep = sim.SpikePairRule(tau_plus=tau_plus, 
                                        tau_minus=tau_minus)

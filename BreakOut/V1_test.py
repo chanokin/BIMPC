@@ -10,11 +10,15 @@
 import numpy as np
 import pylab as plt
 # import vision.sim_tools.connectors.kernel_connectors as kconn
-from vision.spike_tools.vis import my_imshow, plot_spikes,                                    plot_output_spikes,                                    imgs_in_T_from_spike_array,                                    build_gif
+from vision.spike_tools.vis import my_imshow, plot_spikes, \
+                                   plot_output_spikes, \
+                                   imgs_in_T_from_spike_array 
+
 # from vision.sim_tools.vis import plot_connector_3d
 # import vision.sim_tools.kernels.center_surround as csgen
 # import vision.sim_tools.kernels.gabor as gabgen
 import vision.sim_tools.connectors.mapping_funcs as mapfun
+from vision.sim_tools.common import *
 
 from mpl_toolkits.mplot3d import axes3d, Axes3D
 
@@ -22,6 +26,7 @@ from vision.retina import Retina, dvs_modes, MERGED
 from vision.lgn import LGN
 from vision.v1 import V1
 from vision.spike_tools.pattern import pattern_generator as pat_gen
+
 import pickle
 import cv2
 import os
@@ -156,7 +161,7 @@ def plot_out_spikes(on_spikes, off_spikes, img_w, img_h,
 
 # In[3]:
 do_lgn = True
-do_v1  = False and do_lgn
+do_v1  = True and do_lgn
 learning_on = True
 learning_off = not learning_on
 # img_w, img_h = 160, 128
@@ -233,7 +238,7 @@ if do_v1:
     v1 = V1(sim, lgn, learning_off, cfg=cfg)
 
 run_time = on_time_ms
-
+# sys.exit()
 print("Start run for %s ms"%run_time)
 sim.run(run_time)
 
@@ -286,6 +291,21 @@ if do_v1:
 
     pickle.dump(v1_input, open('v1_input_spikes.pickle', 'w'))
     pickle.dump(v1_input, open('v1_output_spikes.pickle', 'w'))
+
+    v1_in_w0 = {}
+    v1_in_w1 = {}
+    print("\tWeights For V1 simples")
+    for r in v1.units:
+        
+        v1_in_w0[r] = {}
+        v1_in_w1[r] = {}
+        for c in v1.units[r]:
+
+            v1_in_w0[r][c] = v1.units[r][c].get_input_weights(get_initial=True)
+            v1_in_w1[r][c] = v1.units[r][c].get_input_weights(get_initial=False)
+            # print(np.sum((v1_in_w0 - v1_in_w1)**2))
+    pickle.dump(v1_in_w0, open("v1_in_w0.pickle", "w"))
+    pickle.dump(v1_in_w1, open("v1_in_w1.pickle", "w"))
 
 sim.end()
 
@@ -432,12 +452,33 @@ if do_lgn and 'on' in lgn_spks:
         plt.close()
 
 # In[ ]:
+def print_weights(w):
+    print(w.shape)
+    print(np.sum(np.abs(w)))
+
+
+def compare_weights(w0, w1):
+    for ch in w0:
+        for pop in w0[ch]:
+            for cn_k in w0[ch][pop]:
+                print_debug((ch, pop, cn_k))
+                
+                w00 = w0[ch][pop][cn_k]
+                w00[np.where(np.isnan(w00))] = 0
+                
+                w10 = w1[ch][pop][cn_k]
+                w10[np.where(np.isnan(w10))] = 0
+                
+
+                print_weights(w00)
+                print_weights(w10)
+                print(np.sqrt(np.sum( (w00 - w10)**2 )))
 
 if do_v1:
     for r in v1_input:
         for c in v1_input[r]:
             
-            # print(v1_spks[r][c])
+            print(v1_input[r][c])
             if not v1_input[r][c]:
                 continue
                 
@@ -449,21 +490,12 @@ if do_v1:
                         dpi=150)
             plt.close()
 
-    v1_in_w0 = {}
-    v1_in_w1 = {}
-    print("\tFor V1 simples")
-    for r in v1.units:
-        
-        v1_in_w0[r] = {}
-        v1_in_w1[r] = {}
-        for c in v1.units[r]:
-            print("WEIGHT CHANGE IN %d, %d"%(r, c))
-            print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
-            v1_in_w0[r][c] = v1.units[r][c].get_input_weights(get_initial=True)
-            v1_in_w1[r][c] = v1.units[r][c].get_input_weights(get_initial=False)
-            print(np.sum((v1_in_w0 - v1_in_w1)**2))
-    pickle.dump(v1_in_w0, open("v1_in_w0.pickle", "w"))
-    pickle.dump(v1_in_w1, open("v1_in_w1.pickle", "w"))
+    for r in v1_in_w0:
+        for c in v1_in_w0[r]:
+                
+                print("WEIGHT CHANGE IN (row, col) == (%d, %d)"%(r, c))
+                print("++++++++++++++++++++++++++++++++++++++++++++++++++++")
+                compare_weights(v1_in_w0[r][c], v1_in_w1[r][c])
 # In[ ]:
 
 
