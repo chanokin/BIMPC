@@ -213,7 +213,7 @@ relay.record()
 sim.Projection(cam, relay, sim.OneToOneConnector(weights=2.))
 
 cfg = {'record': {'voltages': False, 
-                  'spikes': False,
+                  'spikes': True,
                  },
        'row_bits': 5,
       }
@@ -224,7 +224,7 @@ retina.pops['off']['cam_inter'].record()
 
 if do_lgn:
     cfg = {'record': {'voltages': False, 
-                      'spikes': False,
+                      'spikes': True,
                      },
       }
     lgn = LGN(sim, retina, cfg=cfg)
@@ -254,25 +254,25 @@ inter_cam_spks['off'] = get_spikes(retina.pops['off']['cam_inter'],
 
 print("Trying to get output spikes")
 out_spks = {}
-# print("\tFor Retina")
-# for k in retina.pops.keys():
-    # out_spks[k] = {}
-    # for p in retina.pops[k].keys():
-        # out_spks[k][p] = {}
-        # if isinstance(retina.pops[k][p], dict):
-            # for t in retina.pops[k][p].keys():
-                # key = "retina_%s__%s__%s"%(k, p, t)
-                # out_spks[k][p][t] = get_spikes(retina.pops[k][p][t], key)
+print("\tFor Retina")
+for k in retina.pops.keys():
+    out_spks[k] = {}
+    for p in retina.pops[k].keys():
+        out_spks[k][p] = {}
+        if isinstance(retina.pops[k][p], dict):
+            for t in retina.pops[k][p].keys():
+                key = "retina_%s__%s__%s"%(k, p, t)
+                out_spks[k][p][t] = get_spikes(retina.pops[k][p][t], key)
 
 if do_lgn:
     lgn_spks = {}
-    # print("\tFor LGN")
+    print("\tFor LGN")
     # 
-    # for c in lgn.pops.keys():
-        # lgn_spks[c] = {}
-        # for k in lgn.pops[c].keys():
-            # key = "lgn_%s_%s"%(c,k)
-            # lgn_spks[c][k] = get_spikes(lgn.pops[c][k]['output'], key)
+    for c in lgn.pops.keys():
+        lgn_spks[c] = {}
+        for k in lgn.pops[c].keys():
+            key = "lgn_%s_%s"%(c,k)
+            lgn_spks[c][k] = get_spikes(lgn.pops[c][k]['output'], key)
             
 
 if do_v1:
@@ -470,15 +470,15 @@ def compare_weights(w0, w1):
                 w10[np.where(np.isnan(w10))] = 0
                 
 
-                print_weights(w00)
-                print_weights(w10)
+                # print_weights(w00)
+                # print_weights(w10)
                 print(np.sqrt(np.sum( (w00 - w10)**2 )))
 
 if do_v1:
     for r in v1_input:
         for c in v1_input[r]:
             
-            print(v1_input[r][c])
+            # print(v1_input[r][c])
             if not v1_input[r][c]:
                 continue
                 
